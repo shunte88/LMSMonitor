@@ -605,7 +605,7 @@ in_addr_t getServerAddress(void) {
                     char portbuf[6];
                     memset(&portbuf, 0, sizeof(portbuf));
                     for (int i = 6, j = 0;
-                         i < read_bytes && j < sizeof(portbuf) - 1; ++i, ++j) {
+                         (ssize_t)i < read_bytes && j < sizeof(portbuf) - 1; ++i, ++j) {
                         portbuf[j] = readbuf[i]; // assumes we're reading digits
                     }
                     lms.LMSPort = atol(portbuf); // overflow is possible

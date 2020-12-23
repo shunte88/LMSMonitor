@@ -87,7 +87,8 @@ https://stackoverflow.com/questions/4158900/embedding-resources-in-executable-us
 */
 
 // splash
-const uint8_t *splash(void);
+const uint8_t *splash59x31(void); // wording
+const uint8_t *splash69x64(void); // shunte88
 // network sybols
 const uint8_t *netconn17x12(void);
 

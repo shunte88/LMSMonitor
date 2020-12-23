@@ -29,7 +29,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-
 typedef enum Method { UNSUPPORTED, GET, HEAD, POST } Method;
 
 typedef struct Header {

@@ -418,8 +418,22 @@ void hazardSign(void) {
 }
 
 void splashScreen(void) {
+
     display.clearDisplay();
-    display.drawBitmap(0, 0, splash(), 128, 64, WHITE);
+
+    display.drawBitmap(0, 0, splash69x64(), 69, 64, WHITE);
+    display.drawBitmap(64, 4, splash59x31(), 59, 31, WHITE);
+
+    DrawTime dt = {.charWidth = 12,
+                   .charHeight = 17,
+                   .bufferLen = LCD12X17_LEN,
+                   .pos = {72, 42},
+                   .font = MON_FONT_LCD1217};
+
+    char year[5] = {0};
+    sprintf(year, "%s", __DATE__ + 7);
+    drawTimeText(year, "XXXX", &dt);
+
     display.display();
     for (int i = 0; i < MAX_BRIGHTNESS; i++) {
         display.setBrightness(i);
@@ -524,15 +538,17 @@ void putWeatherForecast(bool clear, int x, int y, ccdata_t *cc) {
     putWeatherIcon(x + wix - 1, y, cc); // replaced y+1 w. y
 
     char buf[128];
-    putTinyTextMaxWidthCentered(x, y + 45, wc, cc->observation_time.sdatum);  // bump 2
-    display.drawRect(x, y + 38, w - 2, 9, WHITE); //bump 3 -3
+    putTinyTextMaxWidthCentered(x, y + 45, wc, cc->observation_time.sdatum);
+    display.drawRect(x, y + 38, w - 2, 9, WHITE);
+    //display.fillRect(x, y + 38, w - 2, 9, WHITE);
+    //putTinyTextMaxWidthCentered(x, y + 45, wc, cc->observation_time.sdatum,BLACK);
     sprintf(buf, "%d%s | %d%s", (int)round(cc->temp_max.fdatum),
             cc->temp_max.units, (int)round(cc->temp_min.fdatum),
             cc->temp_min.units);
-    putTinyTextMaxWidthCentered(x, y + 54, wc, buf); // bump 1
+    putTinyTextMaxWidthCentered(x, y + 54, wc, buf);
     sprintf(buf, "%d %%", (int)round(cc->precipitation_probability.fdatum));
     putTinyTextMaxWidthCentered(x, y + 60, wc, buf);
-    display.drawRect(x, y + 47, w - 2, 15, WHITE); // bump 2 -2
+    display.drawRect(x, y + 47, w - 2, 15, WHITE);
 }
 
 void putIFDetail(int icon, int xpos, int ypos, char *host) {
@@ -612,7 +628,7 @@ void downmixPeakH(struct vissy_meter_t *vissy_meter,
 
     // intermediate variable so we can easily switch metrics
     meter_chan_t meter = {vissy_meter->sample_accum[0],
-                          vissy_meter->sample_accum[1], 0.00,0.00};
+                          vissy_meter->sample_accum[1], 0.00, 0.00};
 
     int divisor = 0;
     double test = 0;
@@ -676,7 +692,7 @@ void simplePeakH(struct vissy_meter_t *vissy_meter,
 
     // intermediate variable so we can easily switch metrics
     meter_chan_t meter = {vissy_meter->sample_accum[0],
-                          vissy_meter->sample_accum[1], 0.00,0.00};
+                          vissy_meter->sample_accum[1], 0.00, 0.00};
 
     if (vissy_meter->is_mono) {
         meter.percent[0] = 100.0 * (((double)meter.metric[0] / 58.00) / 8.00);
@@ -949,7 +965,8 @@ void downmixVU(struct vissy_meter_t *vissy_meter,
     }
 }
 
-void stereoVU(struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout) {
+//void stereoVU(struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout) {
+void stereoVU(struct vissy_meter_t *vissy_meter, DrawVisualize *layout) {
 
     meter_chan_t thisVU = {vissy_meter->sample_accum[0],
                            vissy_meter->sample_accum[1]};
@@ -1701,7 +1718,7 @@ bool acquireLock(const int line) {
 
 bool putScrollable(int line, char *buff) {
 
-    setScrollActive(line, false);
+    setScrollActive(line, false, false);
     bool ret = true;
     int tlen = 0;
     if ((line > 0) && (line < maxLine())) {
@@ -1819,7 +1836,7 @@ void setScrollThawed(int line) {
     }
 }
 
-void setScrollActive(int line, bool active, bool save = false) {
+void setScrollActive(int line, bool active, bool save) {
     if (acquireLock(line)) {
         if (save) {
             scroll[line].priorstate = scroll[line].active;
@@ -2067,14 +2084,17 @@ void putTinyTextMaxWidth(int x, int y, int w, char *buff) {
 }
 
 // using tom thumb font to squeeze a little more real-estate
-void putTinyTextMaxWidthCentered(int x, int y, int w, char *buff) {
+void putTinyTextMaxWidthCentered(int x, int y, int w, char *buff,
+                                 uint16_t color = WHITE) {
 
     display.setFont(&TomThumb);
     int tlen = strlen(buff);
     display.setTextSize(1);
+    display.setTextColor(color);
     int16_t x1, y1, w1, h1;
+
     display.fillRect(x - 2, y - _tt_char_height, w * _tt_char_width,
-                     2 + _tt_char_height, BLACK);
+                     2 + _tt_char_height, (WHITE == color) ? BLACK : WHITE);
     int px = x;
     if (tlen < w) { // assumes monospaced - we're not!
         px = (int)(((w - tlen) * _tt_char_width) / 2);

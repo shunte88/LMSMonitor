@@ -785,7 +785,7 @@ int main(int argc, char *argv[]) {
         splashScreen();
         lmsopt.splash = false; // once only!
     } else {
-        displayBrightness(MAX_BRIGHTNESS);
+        displayBrightness(MAX_BRIGHTNESS, false);
     }
 
 #endif
@@ -1454,9 +1454,9 @@ void clockWeatherPage(climacell_t *cc) {
         int x = 0;
         int divx = (int)(maxXPixel() / 3);
         activateForecast(cc);
-        // paint forecast, skip 0 - current day
-        int idxi = 1;
-        for (int idx = idxi; idx < CC_DATA_NOW; idx++) {
+        // paint forecast
+        int idxi = 0;
+        for (int idx = idxi; idx < CC_DATA_NOW-1; idx++) {
             putWeatherForecast(((loctm.tm_sec < 2) && (idxi == idx)), x, 2,
                                &cc->ccforecast[idx]);
             x += divx;

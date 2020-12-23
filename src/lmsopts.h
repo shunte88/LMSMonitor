@@ -70,6 +70,7 @@ typedef struct MonitorAttrs {
     int clockFont;
     bool flipDisplay;     // display mounted upside down
     char weather[128];    // weather init string, apikey and units (optional)
+    char weatherAPI[3];   // v3, v4 (v4 after 12/22/2020)
     coord_t locale;       // lat, lon coordinates specifics
     uint8_t i2cBus;       // number of I2C bus
     uint8_t oledRST;      // IIC/SPI reset GPIO

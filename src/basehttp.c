@@ -177,7 +177,7 @@ bool baseHTTPRequest(enum Method method, char *host, uint16_t port, char *uri,
     ssize_t total_size = 0;
     ssize_t read_size = 0;
 
-    ssize_t seed = 4096;
+    ssize_t seed = BUFSIZ;
     char *ret;
     if ((ret = (char *)malloc(seed * sizeof(char))) == NULL) {
         return false;
@@ -247,11 +247,10 @@ bool baseHTTPRequest(enum Method method, char *host, uint16_t port, char *uri,
 
     // Send HTTP request.
     if (write(sockFD, request, strlen(request)) < 0) {
-        fprintf(stderr, "[baseHTTPRequest] error: writing to socket!");
+        fprintf(stderr, "[baseHTTPRequest] error: writing to socket!\n");
         //if (ret) free(ret);
         return false;
     }
-
     bool redone = false;
     while ((read_size = recv(sockFD, buffer, BUFSIZ - 1, 0))) {
         if (read_size > seed) {
@@ -259,12 +258,14 @@ bool baseHTTPRequest(enum Method method, char *host, uint16_t port, char *uri,
             redone = true;
             ret = (char *)realloc(ret, read_size + total_size);
             if (response == NULL) {
-                printf("[baseHTTPRequest] error: realloc failed");
+                printf("[baseHTTPRequest] error: realloc failed\n");
             }
             seed = 0;
         }
         memcpy(ret + total_size, buffer, read_size);
         total_size += read_size;
+        if (total_size > BUFSIZ)
+            fprintf(stderr, "[baseHTTPRequest] %ld\n", total_size);
     }
 
     if (redone) {

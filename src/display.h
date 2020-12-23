@@ -37,6 +37,7 @@
 
 #include "eggs.h"
 #include "visdata.h"
+#include "ArduiPi_OLED.h"
 
 #define MAX_LINES 8
 
@@ -149,7 +150,7 @@ void setInitRefresh(void);
 void printOledSetup(void);
 void printOledTypes(void);
 bool setOledType(int ot);
-bool setOledAddress(int8_t oa, int LR = 0);
+bool setOledAddress(int8_t oa, int LR);
 
 void setScrollMode(enum ScrollMode sm);
 void printScrollerMode(void);
@@ -162,7 +163,8 @@ double rad2Deg(double angRad);
 
 void hazardSign(void);
 void splashScreen(void);
-void displayBrightness(int bright, bool flip = false);
+
+void displayBrightness(int bright, bool flip);
 
 void putWeatherTemp(int x, int y, ccdata_t *cc);
 void putWeatherIcon(int x, int y, ccdata_t *cc);
@@ -175,7 +177,7 @@ void scrollerInit(void);
 void clearScrollable(int line);
 bool putScrollable(int y, char *buff);
 void scrollerFinalize(void);
-void setScrollActive(int line, bool active, bool save = false);
+void setScrollActive(int line, bool active, bool save);
 void setScrollPosition(int line, int ypos);
 bool activeScroller(void);
 bool isScrollerActive(int line);
@@ -188,21 +190,16 @@ int initDisplay(struct MonitorAttrs dopts, bool init = true);
 void closeDisplay(void);
 void softClear(void);
 
-void stereoVU(struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
-void stereoSpectrum(struct vissy_meter_t *vissy_meter,
-                    struct DrawVisualize *layout);
-void ovoidSpectrum(struct vissy_meter_t *vissy_meter,
-                   struct DrawVisualize *layout);
-void mirrorSpectrum(struct vissy_meter_t *vissy_meter,
-                    struct DrawVisualize *layout);
-void reflectSpectrum(struct vissy_meter_t *vissy_meter,
-                     struct DrawVisualize *layout);
-void stereoPeakH(struct vissy_meter_t *vissy_meter,
-                 struct DrawVisualize *layout);
-void simplePeakH(struct vissy_meter_t *vissy_meter,
-                 struct DrawVisualize *layout);
-void downmixPeakH(struct vissy_meter_t *vissy_meter,
-                  struct DrawVisualize *layout);
+#define VIZSIG struct vissy_meter_t *vissy_meter, DrawVisualize *layout
+//void stereoVU(struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void stereoVU(VIZSIG);
+void stereoSpectrum(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void ovoidSpectrum(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void mirrorSpectrum(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void reflectSpectrum(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void stereoPeakH(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void simplePeakH(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void downmixPeakH(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
 
 // audio attributes
 void putVolume(bool v, char *buff);
@@ -226,7 +223,8 @@ void putTinyText(int x, int y, char *buff);
 void putTinyTextCenterColor(int y, char *buff, uint16_t color);
 void putTinyTextToCenter(int y, char *buff);
 void putTinyTextToRight(int y, int r, int w, char *buff);
-void putTinyTextMaxWidthCentered(int x, int y, int w, char *buff);
+void putTinyTextMaxWidthCentered(int x, int y, int w, char *buff,
+                                 uint16_t color = WHITE);
 
 void clearLine(int y);
 void clearDisplay(void);
@@ -249,9 +247,9 @@ uint16_t charHeight(void);
 void drawHorizontalBargraph(int x, int y, int w, int h, int percent);
 
 void drawHorizontalBar(int x, int y, int w, int h, int percent,
-                       enum BarStyle style,bool clear=true);
+                       enum BarStyle style, bool clear = true);
 void drawVerticalBar(int x, int y, int w, int h, int percent,
-                     enum BarStyle style,bool clear=true);
+                     enum BarStyle style, bool clear = true);
 
 void drawHorizontalStripedBar(int x, int y, int w, int h, int percent);
 void drawHorizontalCheckerBar(int x, int y, int w, int h, int percent);

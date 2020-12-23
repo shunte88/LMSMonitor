@@ -75,7 +75,12 @@ void initTimezone(void) {
 }
 
 void paddem(char *s) {
-    char s2[10] = {0};
+
+    const int ll = strlen(s)*3;
+    char* s2 = NULL;
+    s2 = (char*) malloc(ll);
+    s2[0] = '\0';
+    
     for (uint8_t i = 0; i < strlen(s); i++) {
         char z[3];
         if ('-' != s[i])
@@ -86,6 +91,8 @@ void paddem(char *s) {
     }
     s2[strlen(s2) - 1] = 0;
     strcpy(s, s2);
+    if (s2)
+        free(s2);
 }
 
 struct tm parseSimpleDate(char *dstr) {
@@ -575,7 +582,7 @@ void brightnessEvent(void) {
                     labelIt("Set Display", LABEL_WIDTH, "."));
         }
         putMSG(stb, LL_INFO);
-        displayBrightness(isp_locale.brightness, true);
+        displayBrightness((int)isp_locale.brightness, true); // linker on 64bit
     }
 }
 
@@ -710,7 +717,7 @@ void debug_datum(ccdatum_t *d, enum ccdatum_debug mode) {
             break;
     }
     if (t)
-        free(t);
+        free((void*)t);
 }
 
 // quick and dirty weather impl.
@@ -790,7 +797,7 @@ bool parseClimacell(char *jsonData, climacell_t *climacell,
                     printf(climacell->lat.fmt, labelIt(t, LABEL_WIDTH, "."),
                            climacell->coords.Latitude);
                     if (t)
-                        free(t);
+                        free((void*)t);
                 }
                 done--;
                 i++;
@@ -804,7 +811,7 @@ bool parseClimacell(char *jsonData, climacell_t *climacell,
                     printf(climacell->lon.fmt, labelIt(t, LABEL_WIDTH, "."),
                            climacell->coords.Longitude);
                     if (t)
-                        free(t);
+                        free((void*)t);
                 }
                 done--;
                 i++;
@@ -1089,7 +1096,7 @@ bool parseClimacell(char *jsonData, climacell_t *climacell,
                             printf(d->fmt, labelIt(t, LABEL_WIDTH, "."),
                                    d->sdatum, data->icon.text, data->icon.icon);
                             if (t)
-                                free(t);
+                                free((void*)t);
                         }
                     }
                     done--;
@@ -1211,6 +1218,8 @@ char *httpsFetch(char host[], int port, char uri[], char *body) {
             body_len += size;
             if (body_len + 1 > strlen(resp)) {
                 //printf("%ld > %ld -> %ld\n", body_len, strlen(resp), strlen(resp) + (body_len + 1));
+                // realloc will bletch if it cannot acquire contiguous memory or another thread
+                // has invalidated the heap.  we hit the issue at least once a week TODO - resolve
                 resp = realloc(resp, strlen(resp) + (body_len + 1));
             }
         }

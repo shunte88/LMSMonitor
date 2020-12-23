@@ -28,16 +28,16 @@
 #include <unistd.h>
 
 #include "common.h"
-#include "display.h"
 #include "visdata.h"
 #include "visualize.h"
+#include "display.h"
 
 uint8_t cm = -1;
 bool vis_is_active = false;
 vis_type_t vis_mode = {0};
 vis_type_t vis_list[5] = {{0}, {0}, {0}, {0}, {0}};
 uint8_t num_modes = 1;
-DrawVisualize downmix = {{0, 0}, 0,    0,   0,    128,
+struct DrawVisualize downmix = {{0, 0}, 0,    0,   0,    128,
                          64,     true, {0}, true, BARSTYLE_SOLID};
 bool play_is_active = false;
 
@@ -178,17 +178,21 @@ char *currentMeter(void) {
     if (isEmptyStr(vis_list[cm]))
         cm = 0;
 
+    char meter[3] = {0};
     if (strcmp(vis_list[cm], VMODE_RN) == 0) {
         // pick a random visualization - note ai1 variants are not in the mix
         switch ((rand() % VEMODE_MX) + 1) {
-            case VEMODE_VU: setVisMode(VMODE_VU); break;
-            case VEMODE_SA: setVisMode(VMODE_SA); break;
-            case VEMODE_ST: setVisMode(VMODE_ST); break;
-            case VEMODE_SM: setVisMode(VMODE_SM); break;
-            default: setVisMode(VMODE_PK);
+            case VEMODE_VU: strcpy(meter,VMODE_VU); break;
+            case VEMODE_SA: strcpy(meter,VMODE_SA); break;
+            case VEMODE_ST: strcpy(meter,VMODE_ST); break;
+            case VEMODE_SM: strcpy(meter,VMODE_SM); break;
+            default: strcpy(meter,VMODE_PK);
         }
+
     } else
-        setVisMode(vis_list[cm]);
+        strcpy(meter, vis_list[cm]);
+
+    setVisMode(meter);
 
     if (debugActive()) {
         char stb[128] = {0};
@@ -203,6 +207,8 @@ char *currentMeter(void) {
 int visgood = 0;
 bool lastTest = false;
 void visualize(struct vissy_meter_t *vissy_meter) {
+
+#define SIGVIZ (struct vissy_meter_t*)vissy_meter, (struct DrawVisualize*)&downmix
 
     if (isVisualizeActive()) {
 
@@ -230,12 +236,12 @@ void visualize(struct vissy_meter_t *vissy_meter) {
                         }
                     case VEMODE_VU:
                         instrument(__LINE__, __FILE__, "->Visualize VU");
-                        stereoVU(vissy_meter, &downmix);
+                        stereoVU(SIGVIZ);
                         instrument(__LINE__, __FILE__, "<-Visualize VU");
                         break;
                     case VEMODE_PK:
                         instrument(__LINE__, __FILE__, "->Visualize PK");
-                        stereoPeakH(vissy_meter, &downmix);
+                        stereoPeakH(SIGVIZ);
                         instrument(__LINE__, __FILE__, "<-Visualize PK");
                         break;
                 }
@@ -253,17 +259,17 @@ void visualize(struct vissy_meter_t *vissy_meter) {
                         }
                     case VEMODE_SA:
                         instrument(__LINE__, __FILE__, "->Visualize SA");
-                        stereoSpectrum(vissy_meter, &downmix);
+                        stereoSpectrum(SIGVIZ);
                         instrument(__LINE__, __FILE__, "<-Visualize SA");
                         break;
                     case VEMODE_ST:
                         instrument(__LINE__, __FILE__, "->Visualize ST");
-                        ovoidSpectrum(vissy_meter, &downmix);
+                        ovoidSpectrum(SIGVIZ);//((struct vissy_meter_t*)vissy_meter, (struct DrawVisualize*)&downmix);
                         instrument(__LINE__, __FILE__, "<-Visualize ST");
                         break;
                     case VEMODE_SM:
                         instrument(__LINE__, __FILE__, "->Visualize SM");
-                        mirrorSpectrum(vissy_meter, &downmix);
+                        mirrorSpectrum(SIGVIZ);//((struct vissy_meter_t*)vissy_meter, (struct DrawVisualize*)&downmix);
                         instrument(__LINE__, __FILE__, "<-Visualize SM");
                         break;
                 }
