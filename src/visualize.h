@@ -33,8 +33,8 @@ const char *getVisMode(void);
 void sayVisList(void);
 void setDownmix(int samplesize, float samplerate);
 void setDownmixAttrs(int x, int y, int width, int height, int radius,
-                     int gWidth = 128, int gHeight = 64,
-                     enum BarStyle bs = BARSTYLE_SOLID);
+                     int gWidth, int gHeight,
+                     enum BarStyle bs);
 void setA1Downmix(int mode);
 
 void visualize(struct vissy_meter_t *vissy_meter);

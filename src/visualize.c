@@ -28,9 +28,9 @@
 #include <unistd.h>
 
 #include "common.h"
+#include "display.h"
 #include "visdata.h"
 #include "visualize.h"
-#include "display.h"
 
 uint8_t cm = -1;
 bool vis_is_active = false;
@@ -38,7 +38,7 @@ vis_type_t vis_mode = {0};
 vis_type_t vis_list[5] = {{0}, {0}, {0}, {0}, {0}};
 uint8_t num_modes = 1;
 struct DrawVisualize downmix = {{0, 0}, 0,    0,   0,    128,
-                         64,     true, {0}, true, BARSTYLE_SOLID};
+                                64,     true, {0}, true, BARSTYLE_SOLID};
 bool play_is_active = false;
 
 size_t lenVisList(void) { return (sizeof(vis_list) / sizeof(vis_type_t)); }
@@ -87,8 +87,7 @@ void setDownmix(int samplesize, float samplerate) {
 }
 
 void setDownmixAttrs(int x, int y, int width, int height, int radius,
-                     int gWidth = 128, int gHeight = 64,
-                     enum BarStyle bs = BARSTYLE_SOLID) {
+                     int gWidth, int gHeight, enum BarStyle bs) {
     downmix.pos.x = x;
     downmix.pos.y = y;
     downmix.hMeter = height;
@@ -106,9 +105,9 @@ void setDownmixAttrs(int x, int y, int width, int height, int radius,
 void setA1Downmix(int mode) {
     // need to check the A1 visualization mode
     if (VEMODE_A1S == mode) {
-        setDownmixAttrs(66, 2, 60, 40, 0, 60, 40);
+        setDownmixAttrs(66, 2, 60, 40, 0, 60, 40, BARSTYLE_SOLID);
     } else {
-        setDownmixAttrs(64, 2, 64, 32, 0, 64, 32);
+        setDownmixAttrs(64, 2, 64, 32, 0, 64, 32, BARSTYLE_SOLID);
     }
     setDownmix(16, 44.1);
 }
@@ -182,11 +181,11 @@ char *currentMeter(void) {
     if (strcmp(vis_list[cm], VMODE_RN) == 0) {
         // pick a random visualization - note ai1 variants are not in the mix
         switch ((rand() % VEMODE_MX) + 1) {
-            case VEMODE_VU: strcpy(meter,VMODE_VU); break;
-            case VEMODE_SA: strcpy(meter,VMODE_SA); break;
-            case VEMODE_ST: strcpy(meter,VMODE_ST); break;
-            case VEMODE_SM: strcpy(meter,VMODE_SM); break;
-            default: strcpy(meter,VMODE_PK);
+            case VEMODE_VU: strcpy(meter, VMODE_VU); break;
+            case VEMODE_SA: strcpy(meter, VMODE_SA); break;
+            case VEMODE_ST: strcpy(meter, VMODE_ST); break;
+            case VEMODE_SM: strcpy(meter, VMODE_SM); break;
+            default: strcpy(meter, VMODE_PK);
         }
 
     } else
@@ -208,13 +207,15 @@ int visgood = 0;
 bool lastTest = false;
 void visualize(struct vissy_meter_t *vissy_meter) {
 
-#define SIGVIZ (struct vissy_meter_t*)vissy_meter, (struct DrawVisualize*)&downmix
+#define SIGVIZ                                                                 \
+    (struct vissy_meter_t *)vissy_meter, (struct DrawVisualize *)&downmix
 
     if (isVisualizeActive()) {
 
         if (isEmptyStr(downmix.downmix)) {
             setDownmix(0, 0);
-            setDownmixAttrs(0, 0, maxXPixel() - 2, maxYPixel() - 4, 0);
+            setDownmixAttrs(0, 0, maxXPixel() - 2, maxYPixel() - 4, 0,
+                            maxXPixel(), maxYPixel(), BARSTYLE_SOLID);
             instrument(__LINE__, __FILE__, "<-Fixed Downmix");
         }
         if (isEmptyStr(vis_mode)) {
@@ -264,12 +265,14 @@ void visualize(struct vissy_meter_t *vissy_meter) {
                         break;
                     case VEMODE_ST:
                         instrument(__LINE__, __FILE__, "->Visualize ST");
-                        ovoidSpectrum(SIGVIZ);//((struct vissy_meter_t*)vissy_meter, (struct DrawVisualize*)&downmix);
+                        ovoidSpectrum(
+                            SIGVIZ); //((struct vissy_meter_t*)vissy_meter, (struct DrawVisualize*)&downmix);
                         instrument(__LINE__, __FILE__, "<-Visualize ST");
                         break;
                     case VEMODE_SM:
                         instrument(__LINE__, __FILE__, "->Visualize SM");
-                        mirrorSpectrum(SIGVIZ);//((struct vissy_meter_t*)vissy_meter, (struct DrawVisualize*)&downmix);
+                        mirrorSpectrum(
+                            SIGVIZ); //((struct vissy_meter_t*)vissy_meter, (struct DrawVisualize*)&downmix);
                         instrument(__LINE__, __FILE__, "<-Visualize SM");
                         break;
                 }

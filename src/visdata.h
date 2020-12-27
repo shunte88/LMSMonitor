@@ -92,6 +92,7 @@ struct bin_chan_t {
 struct meter_chan_t {
     int metric[METER_CHANNELS];
     double percent[METER_CHANNELS];
+    bool erase[METER_CHANNELS];
 };
 typedef char vis_type_t[4]; // Visualizer type - include AI variants
 

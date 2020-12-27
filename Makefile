@@ -1,9 +1,9 @@
-# making leaner with overrides - 20200407
+# making leaner with overrides - 20200407, 20201224
 
 TARGET = ./bin/lmsmonitor
 
 # need https support so ssl and crypto added
-LIBS =  -pthread -lrt -L./lib -li2c -lssl -lcrypto
+LIBS =  -pthread -lrt -L./lib -lssl -lcrypto
 
 CC = g++
 

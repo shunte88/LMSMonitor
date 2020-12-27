@@ -114,6 +114,8 @@ void resetLastData(void) {
     for (int channel = 0; channel < 2; channel++) {
         lastVU.metric[channel] = -1000;
         lastPK.metric[channel] = -1000;
+        lastPK.percent[channel] = 0.00;
+        lastPK.erase[channel] = true;
         overVU.metric[channel] = 0;
         dampVU.metric[channel] = -1000;
         for (int bin = 0; bin < MAX_FREQUENCY_BINS; bin++) {
@@ -653,14 +655,19 @@ void downmixPeakH(struct vissy_meter_t *vissy_meter,
     else if (meter.percent[DOWNMIX] < 0.00)
         meter.percent[DOWNMIX] = 1.00;
 
+    lastPK.erase[DOWNMIX] = false; // only erase if we have to, i.e. this < last
     if (meter.percent[DOWNMIX] >= lastPK.percent[DOWNMIX]) {
         lastPK.percent[DOWNMIX] = meter.percent[DOWNMIX];
         lastPK.metric[DOWNMIX] = decay;
-    } else if (lastPK.percent[DOWNMIX] > 0) {
-        lastPK.percent[DOWNMIX] -= ((decay - lastPK.metric[DOWNMIX]) / 60000) *
-                                   CAPS_DECAY; // bump long run decay
-        if (lastPK.percent[DOWNMIX] < 0) {
-            lastPK.percent[DOWNMIX] = 0;
+    } else {
+        lastPK.erase[DOWNMIX] = true;
+        if (lastPK.percent[DOWNMIX] > 0) {
+            lastPK.percent[DOWNMIX] -=
+                ((decay - lastPK.metric[DOWNMIX]) / 60000) *
+                CAPS_DECAY; // bump long run decay
+            if (lastPK.percent[DOWNMIX] < 0) {
+                lastPK.percent[DOWNMIX] = 0;
+            }
         }
     }
 
@@ -674,8 +681,8 @@ void downmixPeakH(struct vissy_meter_t *vissy_meter,
     int y = maxYPixel() / 3;
 
     drawHorizontalBar(x + (20 / step), y + 3, (210 / step), y - 4,
-                      meter.percent[DOWNMIX],
-                      BARSTYLE_STRIPE); // stripe
+                      meter.percent[DOWNMIX], BARSTYLE_STRIPE,
+                      lastPK.erase[DOWNMIX]); // stripe
     drawHorizontalBar(x + (20 / step), y + 3, (210 / step), y - 4,
                       lastPK.percent[DOWNMIX], BARSTYLE_PKCAP_ONLY,
                       false); // stripe
@@ -714,15 +721,19 @@ void simplePeakH(struct vissy_meter_t *vissy_meter,
             meter.percent[channel] = 1.00;
         if (meter.percent[channel] > 100.00)
             carat = true;
+        lastPK.erase[channel] = false;
         if (meter.percent[channel] >= lastPK.percent[channel]) {
             lastPK.percent[channel] = meter.percent[channel];
             lastPK.metric[channel] = decay;
-        } else if (lastPK.percent[channel] > 0) {
-            lastPK.percent[channel] -=
-                ((decay - lastPK.metric[channel]) / 60000) *
-                CAPS_DECAY; // bump long run decay
-            if (lastPK.percent[channel] < 0) {
-                lastPK.percent[channel] = 0;
+        } else {
+            lastPK.erase[channel] = true;
+            if (lastPK.percent[channel] > 0) {
+                lastPK.percent[channel] -=
+                    ((decay - lastPK.metric[channel]) / 60000) *
+                    CAPS_DECAY; // bump long run decay
+                if (lastPK.percent[channel] < 0) {
+                    lastPK.percent[channel] = 0;
+                }
             }
         }
     }
@@ -738,16 +749,15 @@ void simplePeakH(struct vissy_meter_t *vissy_meter,
 
     int by = (y / 2) - 4;
 
-    drawHorizontalBar(x + (20 / step), y + 3, (210 / step), by,
-                      meter.percent[0],
-                      BARSTYLE_STRIPE); // stripe
-    drawHorizontalBar(x + (20 / step), y + 7 + by, (210 / step), by,
-                      meter.percent[1],
-                      BARSTYLE_STRIPE); // stripe
-    drawHorizontalBar(x + (20 / step), y + 3, (210 / step), by,
-                      lastPK.percent[0], BARSTYLE_PKCAP_ONLY, false); // stripe
-    drawHorizontalBar(x + (20 / step), y + 7 + by, (210 / step), by,
-                      lastPK.percent[1], BARSTYLE_PKCAP_ONLY, false); // stripe
+    for (int channel = 0; channel < 2; channel++) {
+        int pos = (channel * (4 + by)) + y + 3;
+        drawHorizontalBar(x + (20 / step), pos, (210 / step), by,
+                          meter.percent[channel], BARSTYLE_STRIPE,
+                          lastPK.erase[channel]); // stripe
+        drawHorizontalBar(x + (20 / step), pos, (210 / step), by,
+                          lastPK.percent[channel], BARSTYLE_PKCAP_ONLY,
+                          false); // stripe
+    }
     drawCarat(114, carat);
 }
 
