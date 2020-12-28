@@ -31,8 +31,13 @@
 
 #include "climacell.h"
 
-enum clockMode { MON_CLOCK_OFF, MON_CLOCK_24H, MON_CLOCK_12H };
-enum eggYuks {
+typedef enum clockMode {
+    MON_CLOCK_OFF,
+    MON_CLOCK_24H,
+    MON_CLOCK_12H
+} clockMode;
+
+typedef enum eggYuks {
     EE_NONE,
     EE_CASSETTE,
     EE_VINYL,
@@ -41,7 +46,22 @@ enum eggYuks {
     EE_RADIO,
     EE_TVTIME,
     EE_PCTIME
-};
+} eggYuks;
+
+typedef enum BarStyle {
+    BARSTYLE_SOLID,        // Solid filled bars
+    BARSTYLE_SOLID_PKCAP,  // Solid filled bars
+    BARSTYLE_HOLLOW,       // Solid outlines only
+    BARSTYLE_HOLLOW_PKCAP, // Solid outlines only
+    BARSTYLE_CHECK,        // Checker filled
+    BARSTYLE_CHECK_PKCAP,  // Checker filled
+    BARSTYLE_STRIPE,       // Alternate stripes
+    BARSTYLE_STRIPE_PKCAP, // Alternate stripes
+    BARSTYLE_SPLIT,        // Single double stripe at maxima
+    BARSTYLE_SPLIT_PKCAP,  // Single double stripe at maxima
+    BARSTYLE_PKCAP_ONLY,   // Maxima caps only
+    BARSTYLE_MAX,
+} BarStyle;
 
 typedef struct MonitorAttrs {
     char *playerName;
@@ -59,6 +79,7 @@ typedef struct MonitorAttrs {
     bool nagDone;
     bool visualize;
     bool meterMode;
+    enum BarStyle barstyle;
     enum clockMode clockMode;
     bool extended;
     bool remaining;

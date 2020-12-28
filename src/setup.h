@@ -71,6 +71,7 @@ static struct argp_option options[] = {
     {"downmix", 'd', 0, 0,
      "Downmix (visualization) audio and display a single large meter, SA and "
      "VU only"},
+    {"barstyle", 'P', "BARSTYLE", 0, "Barstyle, spectrum variants only"},
     {"font", 'f', "FONT", 0, "Font used by clock, see list below for details"},
     {"flip", 'F', 0, 0, "Invert the display - if display mounted upside down"},
     {"invert", 'I', 0, OPTION_ALIAS},
@@ -132,10 +133,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 if (test < 0 || test >= OLED_LAST_OLED ||
                     !(strstr(oled_type_str[test], "128x64") ||
                       strstr(oled_type_str[test], "256x64"))) {
-                    sprintf(
-                        err,
-                        "you specified %d, it is an invalid 128x64 or 256x64 OLED type\n",
-                        test);
+                    sprintf(err,
+                            "you specified %d, it is an invalid 128x64 or "
+                            "256x64 OLED type\n",
+                            test);
                     printOledTypes();
                     argp_failure(state, 1, 0, err);
                 } else {
@@ -186,6 +187,16 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             break;
 
         case 'd': arguments->lmsopt->downmix = true; break;
+        case 'P':
+            if (arg) {
+                test = atoi(arg); // sscanf(arg, "%d", &test);
+                if ((test >= BARSTYLE_SOLID) && (test < BARSTYLE_MAX)) {
+                    arguments->lmsopt->barstyle = test;
+                } else {
+                    arguments->lmsopt->barstyle = BARSTYLE_SOLID;
+                }
+            }
+            break;
         case 'w':
             if (arg && 0 == atoi(arg)) {
                 arguments->lmsopt->showWarnings = false;

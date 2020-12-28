@@ -54,6 +54,8 @@ void setPlaying(bool p) {
         play_is_active = p;
 }
 
+void setBarStyle(enum BarStyle bs) { downmix.barStyle = bs; }
+
 bool setVisMode(vis_type_t mode) {
     bool ret = false;
     if (strcmp(vis_mode, mode) != 0) {
@@ -214,8 +216,11 @@ void visualize(struct vissy_meter_t *vissy_meter) {
 
         if (isEmptyStr(downmix.downmix)) {
             setDownmix(0, 0);
+            if(!downmix.barStyle) {
+                downmix.barStyle = BARSTYLE_SOLID;
+            }
             setDownmixAttrs(0, 0, maxXPixel() - 2, maxYPixel() - 4, 0,
-                            maxXPixel(), maxYPixel(), BARSTYLE_SOLID);
+                            maxXPixel(), maxYPixel(), downmix.barStyle);
             instrument(__LINE__, __FILE__, "<-Fixed Downmix");
         }
         if (isEmptyStr(vis_mode)) {

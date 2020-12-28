@@ -27,6 +27,7 @@
 void setA1VisList(void);
 void setPlaying(bool p);
 
+void setBarStyle(enum BarStyle bs);
 void setVisList(char *vlist);
 bool setVisMode(vis_type_t mode);
 const char *getVisMode(void);

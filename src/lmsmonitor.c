@@ -705,6 +705,7 @@ int main(int argc, char *argv[]) {
         .nagDone = false,
         .visualize = false,
         .meterMode = false,
+        .barstyle = BARSTYLE_SOLID,
         .clockMode = MON_CLOCK_OFF,
         .extended = false,
         .remaining = false,
@@ -774,6 +775,8 @@ int main(int argc, char *argv[]) {
             setVisList(vinit);
         }
     }
+
+    setBarStyle(lmsopt.barstyle);
 
     // init OLED display IIC & SPI supported
     if (initDisplay(lmsopt) == EXIT_FAILURE) {
