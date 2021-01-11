@@ -1,7 +1,7 @@
 /*
  *	setup.h
  *
- *	(c) 2020 Stuart Hunter
+ *	(c) 2020-21 Stuart Hunter
  *
  *	TODO:	
  *
@@ -83,6 +83,8 @@ static struct argp_option options[] = {
     {"metrics", 'k', 0, 0, "Show CPU load and temperature (clock mode)"},
     {"warnings", 'w', "WARNING", OPTION_ARG_OPTIONAL,
      "Show warnings on disconnect or server down"},
+    {"powersave", 'K', 0, 0,
+     "Power saver, power down screen if player powered down"},
     {"visualize", 'v', 0, 0,
      "Enable visualization sequence when track playing (pi only)"},
     {"meter", 'm', "MODES", 0,
@@ -191,9 +193,53 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             if (arg) {
                 test = atoi(arg); // sscanf(arg, "%d", &test);
                 if ((test >= BARSTYLE_SOLID) && (test < BARSTYLE_MAX)) {
-                    arguments->lmsopt->barstyle = test;
-                } else {
-                    arguments->lmsopt->barstyle = BARSTYLE_SOLID;
+                    switch (test) {
+                        case BARSTYLE_SOLID:
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_SOLID; // Solid filled bars
+                            break;
+                        case BARSTYLE_SOLID_PKCAP:
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_SOLID_PKCAP; // Solid filled bars + peak
+                            break;
+                        case BARSTYLE_HOLLOW: // Solid outlines only
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_HOLLOW; // Solid filled bars
+                            break;
+                        case BARSTYLE_HOLLOW_PKCAP: // Solid outlines only
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_HOLLOW_PKCAP; // Solid filled bars
+                            break;
+                        case BARSTYLE_CHECK: // Checker filled
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_CHECK; // Solid filled bars
+                            break;
+                        case BARSTYLE_CHECK_PKCAP: // Checker filled
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_CHECK_PKCAP; // Solid filled bars
+                            break;
+                        case BARSTYLE_STRIPE: // Alternate stripes
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_STRIPE; // Solid filled bars
+                            break;
+                        case BARSTYLE_STRIPE_PKCAP: // Alternate stripes
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_STRIPE_PKCAP; // Solid filled bars
+                            break;
+                        case BARSTYLE_SPLIT: // Single double stripe at maxima
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_SPLIT; // Solid filled bars
+                            break;
+                        case BARSTYLE_SPLIT_PKCAP: // Single double stripe at maxima
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_SPLIT_PKCAP; // Solid filled bars
+                            break;
+                        case BARSTYLE_PKCAP_ONLY: // Maxima caps only
+                            arguments->lmsopt->barstyle =
+                                BARSTYLE_PKCAP_ONLY; // Solid filled bars
+                            break;
+                        default: arguments->lmsopt->barstyle = BARSTYLE_SOLID;
+                    }
                 }
             }
             break;
@@ -207,7 +253,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 test = atoi(arg); // sscanf(arg, "%d", &test);
                 if (test < MON_FONT_CLASSIC || test >= MON_FONT_LCD1521) {
                     sprintf(err,
-                            "you specified %d, it is an invalid OLED font\n",
+                            "you specified %d, it is an invalid OLED "
+                            "font\n",
                             test);
                     printOledFontTypes();
                     argp_failure(state, 1, 0, err);
@@ -220,6 +267,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
         case 'F': arguments->lmsopt->flipDisplay = true; break;
 
         case 'k': arguments->lmsopt->showTemp = true; break;
+        case 'K': arguments->lmsopt->checkPower = true; break;
         case 'l':
         case 'i': incVerbose(); break;
 
@@ -274,7 +322,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 
         case 'S':
             if (arg)
-                setScrollMode(atoi(arg));
+                setScrollMode((enum ScrollMode)atoi(arg));
             break;
         case 'B':
             if (arg) {

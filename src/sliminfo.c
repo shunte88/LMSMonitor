@@ -1,8 +1,8 @@
 /*
  *	sliminfo.c
  *
+ *	(c) 2020-21 Stuart Hunter
  *	(c) 2015 László TÓTH
- *	(c) 2020 Stuart Hunter - top-down rewrite
  *
  *	This program is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
@@ -78,6 +78,9 @@ bool parseLMSResponse(char *jsonData) {
 
     int v = getVerbose();
 
+    //if (v > LL_INFO)
+    //    printf("\n%s\n\n", jsonData);
+
     jsmn_parser p;
     jsmntok_t jt[300];
 
@@ -120,6 +123,12 @@ bool parseLMSResponse(char *jsonData) {
                 if (storeTagData(&lmsTags[VOLUME], valStr))
                     if (v > LL_DEBUG)
                         printf("LMS:Volume ..........: %d\n", atoi(valStr));
+            } else if (0 == strncmp(lmsTags[POWER].name, keyStr,
+                                    lmsTags[POWER].keyLen)) {
+                if (storeTagData(&lmsTags[POWER], valStr))
+                    if (v > LL_DEBUG)
+                        printf("LMS:Player Powered ..: %s\n",
+                               (strncmp("0", valStr, 1) == 0) ? "Off" : "On");
             } else if (0 == strncmp(lmsTags[CONNECTED].name, keyStr,
                                     lmsTags[CONNECTED].keyLen)) {
                 if (storeTagData(&lmsTags[CONNECTED], valStr))
@@ -272,10 +281,10 @@ bool remediateLkpMSPlayer(char *jsonData, char *checkPName, int posCPN = 0) {
         int trip = 4;
         char *in = jsonData;
         char *token;
-        char *nibbler = "{]";
+        char nibbler[3] = "{]";
         token = strstr(in, "players_loop");
         in = token + 12 + 2; // quote colon
-        token = strtok(in, nibbler);
+        token = strtok(in, (char *)nibbler);
 
         int retval = 0;
         regex_t re;
@@ -335,7 +344,7 @@ bool remediateLkpMSPlayer(char *jsonData, char *checkPName, int posCPN = 0) {
                     }
                 }
             }
-            token = strtok(NULL, nibbler);
+            token = strtok(NULL, (char *)nibbler);
         }
     }
     return (lms.activePlayer != -1);
@@ -605,7 +614,8 @@ in_addr_t getServerAddress(void) {
                     char portbuf[6];
                     memset(&portbuf, 0, sizeof(portbuf));
                     for (int i = 6, j = 0;
-                         (ssize_t)i < read_bytes && j < sizeof(portbuf) - 1; ++i, ++j) {
+                         (ssize_t)i < read_bytes && j < sizeof(portbuf) - 1;
+                         ++i, ++j) {
                         portbuf[j] = readbuf[i]; // assumes we're reading digits
                     }
                     lms.LMSPort = atol(portbuf); // overflow is possible
@@ -686,6 +696,7 @@ tag_t *initTags(void) {
     populateTag(DURATION, "duration", "d");
     populateTag(MODE, "mode", "");
     populateTag(PERFORMER, "performer", "");
+    populateTag(POWER, "power", "");
     populateTag(REMAINING, "remaining", "");
     populateTag(REMOTE, "remote", "x");
     populateTag(REMOTETITLE, "remote_title", "N");
@@ -725,7 +736,6 @@ tag_t *initTags(void) {
 }
 
 bool getTagBool(tag_t *tag) {
-
     if (tag == NULL) {
         return false;
     }
@@ -737,7 +747,6 @@ bool getTagBool(tag_t *tag) {
 }
 
 long getMinute(tag_t *tag) {
-
     if ((tag == NULL) || (!tag->valid)) {
         return 0;
     }
@@ -765,93 +774,100 @@ void *serverPolling(void *x_voidptr) {
                          (char *)jsonData)) {
                 if (!isEmptyStr(jsonData)) {
                     if (parseLMSResponse(jsonData)) {
+                        // fill derived dat, only if the unit is powered
+                        if (playerPowered()) {
 
-                        // patch for remote streams
-                        if (0 == strcmp("1", lmsTags[REMOTE].tagData)) {
-                            if (0 == strcmp("0", lmsTags[DURATION].tagData)) {
-                                strcpy(lmsTags[DURATION].tagData, "3600");
-                            }
-                            strncpy(lmsTags[ALBUMARTIST].tagData,
-                                    lmsTags[TITLE].tagData, MAXTAG_DATA);
-                            lmsTags[ALBUMARTIST].valid = true;
-                            lmsTags[ALBUMARTIST].changed = true;
-                            strncpy(lmsTags[ARTIST].tagData,
-                                    lmsTags[TITLE].tagData, MAXTAG_DATA);
-                            lmsTags[ARTIST].valid = true;
-                            lmsTags[ARTIST].changed = true;
-                        }
-
-                        long pTime = getMinute(&lmsTags[TIME]);
-                        long dTime = getMinute(&lmsTags[DURATION]);
-
-                        if (pTime && dTime) {
-                            snprintf(buffer, MAXTAG_DATA, "%ld",
-                                     (dTime - pTime));
-                            storeTagData(&lmsTags[REMAINING], buffer);
-                        }
-
-                        // Fix Various Artists
-                        if (getTagBool(&lmsTags[COMPILATION])) {
-                            if (strcmp(variousArtist,
-                                       lmsTags[ALBUMARTIST].tagData) != 0) {
+                            // patch for remote streams
+                            if (0 == strcmp("1", lmsTags[REMOTE].tagData)) {
+                                if (0 ==
+                                    strcmp("0", lmsTags[DURATION].tagData)) {
+                                    strcpy(lmsTags[DURATION].tagData, "3600");
+                                }
                                 strncpy(lmsTags[ALBUMARTIST].tagData,
-                                        variousArtist, MAXTAG_DATA);
+                                        lmsTags[TITLE].tagData, MAXTAG_DATA);
                                 lmsTags[ALBUMARTIST].valid = true;
                                 lmsTags[ALBUMARTIST].changed = true;
-                            }
-                        }
-
-                        if (isEmptyStr(lmsTags[ALBUMARTIST].tagData)) {
-                            if (isEmptyStr(lmsTags[CONDUCTOR].tagData)) {
-                                strncpy(lmsTags[ALBUMARTIST].tagData,
-                                        lmsTags[ARTIST].tagData, MAXTAG_DATA);
-                                lmsTags[ALBUMARTIST].valid = true;
-                                lmsTags[ALBUMARTIST].changed = true;
-                            } else {
-                                strncpy(lmsTags[ALBUMARTIST].tagData,
-                                        lmsTags[CONDUCTOR].tagData,
-                                        MAXTAG_DATA);
-                                lmsTags[ALBUMARTIST].valid = true;
-                                lmsTags[ALBUMARTIST].changed = true;
-                            }
-                        } else if (strcicmp(variousArtist,
-                                            lmsTags[ALBUMARTIST].tagData) ==
-                                   0) {
-                            if (!isEmptyStr(lmsTags[ARTIST].tagData)) {
-                                strncpy(lmsTags[ALBUMARTIST].tagData,
-                                        lmsTags[ARTIST].tagData, MAXTAG_DATA);
-                            } else if (!isEmptyStr(
-                                           lmsTags[PERFORMER].tagData)) {
-                                strncpy(lmsTags[ALBUMARTIST].tagData,
-                                        lmsTags[PERFORMER].tagData,
-                                        MAXTAG_DATA);
-                            }
-                            lmsTags[ALBUMARTIST].valid = true;
-                            lmsTags[ALBUMARTIST].changed = true;
-                        }
-
-                        if (isEmptyStr(lmsTags[ALBUMARTIST].tagData)) {
-                            if (!isEmptyStr(lmsTags[ARTIST].tagData)) {
-                                strncpy(lmsTags[ALBUMARTIST].tagData,
-                                        lmsTags[ARTIST].tagData, MAXTAG_DATA);
-                            } else if (!isEmptyStr(
-                                           lmsTags[PERFORMER].tagData)) {
-                                strncpy(lmsTags[ALBUMARTIST].tagData,
-                                        lmsTags[PERFORMER].tagData,
-                                        MAXTAG_DATA);
-                            }
-                            lmsTags[ALBUMARTIST].valid = true;
-                            lmsTags[ALBUMARTIST].changed = true;
-                        }
-                        // need valid checks - surely?
-                        if (isEmptyStr(lmsTags[ARTIST].tagData)) {
-                            if (!isEmptyStr(lmsTags[PERFORMER].tagData)) {
                                 strncpy(lmsTags[ARTIST].tagData,
-                                        lmsTags[PERFORMER].tagData,
-                                        MAXTAG_DATA);
+                                        lmsTags[TITLE].tagData, MAXTAG_DATA);
+                                lmsTags[ARTIST].valid = true;
+                                lmsTags[ARTIST].changed = true;
                             }
-                            lmsTags[ARTIST].valid = true;
-                            lmsTags[ARTIST].changed = true;
+
+                            long pTime = getMinute(&lmsTags[TIME]);
+                            long dTime = getMinute(&lmsTags[DURATION]);
+
+                            if (pTime && dTime) {
+                                snprintf(buffer, MAXTAG_DATA, "%ld",
+                                         (dTime - pTime));
+                                storeTagData(&lmsTags[REMAINING], buffer);
+                            }
+
+                            // Fix Various Artists
+                            if (getTagBool(&lmsTags[COMPILATION])) {
+                                if (strcmp(variousArtist,
+                                           lmsTags[ALBUMARTIST].tagData) != 0) {
+                                    strncpy(lmsTags[ALBUMARTIST].tagData,
+                                            variousArtist, MAXTAG_DATA);
+                                    lmsTags[ALBUMARTIST].valid = true;
+                                    lmsTags[ALBUMARTIST].changed = true;
+                                }
+                            }
+
+                            if (isEmptyStr(lmsTags[ALBUMARTIST].tagData)) {
+                                if (isEmptyStr(lmsTags[CONDUCTOR].tagData)) {
+                                    strncpy(lmsTags[ALBUMARTIST].tagData,
+                                            lmsTags[ARTIST].tagData,
+                                            MAXTAG_DATA);
+                                    lmsTags[ALBUMARTIST].valid = true;
+                                    lmsTags[ALBUMARTIST].changed = true;
+                                } else {
+                                    strncpy(lmsTags[ALBUMARTIST].tagData,
+                                            lmsTags[CONDUCTOR].tagData,
+                                            MAXTAG_DATA);
+                                    lmsTags[ALBUMARTIST].valid = true;
+                                    lmsTags[ALBUMARTIST].changed = true;
+                                }
+                            } else if (strcicmp(variousArtist,
+                                                lmsTags[ALBUMARTIST].tagData) ==
+                                       0) {
+                                if (!isEmptyStr(lmsTags[ARTIST].tagData)) {
+                                    strncpy(lmsTags[ALBUMARTIST].tagData,
+                                            lmsTags[ARTIST].tagData,
+                                            MAXTAG_DATA);
+                                } else if (!isEmptyStr(
+                                               lmsTags[PERFORMER].tagData)) {
+                                    strncpy(lmsTags[ALBUMARTIST].tagData,
+                                            lmsTags[PERFORMER].tagData,
+                                            MAXTAG_DATA);
+                                }
+                                lmsTags[ALBUMARTIST].valid = true;
+                                lmsTags[ALBUMARTIST].changed = true;
+                            }
+
+                            if (isEmptyStr(lmsTags[ALBUMARTIST].tagData)) {
+                                if (!isEmptyStr(lmsTags[ARTIST].tagData)) {
+                                    strncpy(lmsTags[ALBUMARTIST].tagData,
+                                            lmsTags[ARTIST].tagData,
+                                            MAXTAG_DATA);
+                                } else if (!isEmptyStr(
+                                               lmsTags[PERFORMER].tagData)) {
+                                    strncpy(lmsTags[ALBUMARTIST].tagData,
+                                            lmsTags[PERFORMER].tagData,
+                                            MAXTAG_DATA);
+                                }
+                                lmsTags[ALBUMARTIST].valid = true;
+                                lmsTags[ALBUMARTIST].changed = true;
+                            }
+                            // need valid checks - surely?
+                            if (isEmptyStr(lmsTags[ARTIST].tagData)) {
+                                if (!isEmptyStr(lmsTags[PERFORMER].tagData)) {
+                                    strncpy(lmsTags[ARTIST].tagData,
+                                            lmsTags[PERFORMER].tagData,
+                                            MAXTAG_DATA);
+                                }
+                                lmsTags[ARTIST].valid = true;
+                                lmsTags[ARTIST].changed = true;
+                            }
                         }
                     }
                 }
@@ -929,6 +945,7 @@ char *getModelName(void) {
 bool playerConnected(void) {
     return (0 != strcmp(lmsTags[CONNECTED].tagData, "0"));
 }
+bool playerPowered(void) { return (0 != strcmp(lmsTags[POWER].tagData, "0")); }
 void askRefresh(void) { lms.refresh = true; }
 bool isRefreshed(void) { return !lms.refresh; }
 lms_t *lmsDetail(void) { return &lms; }

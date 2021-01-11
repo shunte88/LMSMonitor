@@ -1,7 +1,7 @@
 /*
  *  lmsopt.h
  * 
- *	(c) 2020 Stuart Hunter
+ *	(c) 2020-21 Stuart Hunter
  *
  *	TODO:
  *
@@ -48,6 +48,13 @@ typedef enum eggYuks {
     EE_PCTIME
 } eggYuks;
 
+static const char *barStyleInfo[] = {"Solid Fill",     "Solid Filled + Peak",
+                                     "Hollow/Outline", "Hollow/Outline + Peak",
+                                     "Checker Fill",   "Checker Fill + Peak",
+                                     "Stripes",        "Stripes + Peak",
+                                     "Split Maxima",   "Split Maxima + Peak",
+                                     "Peak Only"};
+
 typedef enum BarStyle {
     BARSTYLE_SOLID,        // Solid filled bars
     BARSTYLE_SOLID_PKCAP,  // Solid filled bars
@@ -60,7 +67,7 @@ typedef enum BarStyle {
     BARSTYLE_SPLIT,        // Single double stripe at maxima
     BARSTYLE_SPLIT_PKCAP,  // Single double stripe at maxima
     BARSTYLE_PKCAP_ONLY,   // Maxima caps only
-    BARSTYLE_MAX,
+    BARSTYLE_MAX
 } BarStyle;
 
 typedef struct MonitorAttrs {
@@ -106,6 +113,8 @@ typedef struct MonitorAttrs {
     bool showWarnings;
     bool pauseDisplay;
     char pauseMessage[128];
+    bool powered;
+    bool checkPower;
     pthread_mutex_t update;
 } MonitorAttrs;
 

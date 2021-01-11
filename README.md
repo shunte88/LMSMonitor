@@ -5,16 +5,19 @@ OLED information display control program for [piCorePlayer](https://www.picorepl
 
 ### Features
 - Removed static library usage, smaller size, upgrade hardened
+- Removed requirement for i2c library usage, BCM 2835 integration is leveraged
 - Removed use of ALSA MIMO, audio attributes provided by LMS are used
 - Track details are displayed only when playing
-- Display features independant scrolling of track details.
+- Display features independant scrolling of track details when required.
 - Remaining time can now be displayed rather than total time
 - Audio attributes, volume, sample depth, and sample rate are shown
 - A retro clock is displayed when the audio paused/stopped.
-- Alternatively you can display current weatherr and time.
+- Alternatively you can display current weather and time.
 - Automatically sets the brightness of the display at dawn and dusk.
 - Multiple audio visualization modes are supported
+- Multiple visualization styles are supported
 - If monitoring from a separate device animations can be displayed as the track plays
+- Alternatively can also be displayed instead of a visualization as the track plays
 
 ### Options
 ```bash
@@ -22,47 +25,52 @@ Usage: lmsmonitor --name "NAME" [OPTIONS...]
 OLED information display control program for piCorePlayer or other Raspberry Pi
 and LMS based audio device.
 
-  -a, --allinone               One screen to rule them all. Track details and
-                               visualizer on single screen (pi only)
-  -b, --brightness             Automatically set brightness of display at sunset
-                               and sunrise (connected to internet, pi only)
-  -B, --bus[=BUSNUM]           I2C bus number (defaults 1, giving device
-                               /dev/i2c-1)
-  -c, --clock[=MODE]           Display clock when not playing, specify 12 or 24
-                               (default) hour format (Pi only)
-  -C, --spi_cs=SPI_CS          SPI CS number (defaults 0)
-  -d, --downmix                Downmix (visualization) audio and display a single
-                               large meter, SA and VU only
-  -D, --spi_dc=SPI_DC          SPI DC GPIO number (defaults 24)
-  -E, --egg=EGGNUM             Easter Eggs (see repo for details)
-  -f, --font=FONT              Font used by clock, see list below for details
-  -F, -I, --flip, --invert     Invert the display - if display mounted upside
-                               down
-  -k, --metrics                Show CPU load and temperature (clock mode)
+  -a, --allinone[=A1MODE]    One screen to rule them all. Track details and
+                             visualizer on single screen, a=1 optional
+                             visualization, a=2 fixed visualization (pi only)
+  -b, --brightness           Automatically set brightness of display at sunset
+                             and sunrise (connected to internet, pi only)
+  -B, --bus[=BUSNUM]         I2C bus number (defaults 1, giving device
+                             /dev/i2c-1)
+  -c, --clock[=MODE]         Display clock when not playing, specify 12 or 24
+                             (default) hour format (Pi only)
+  -C, --spi_cs=SPI_CS        SPI CS number (defaults 0)
+  -d, --downmix              Downmix (visualization) audio and display a single
+                             large meter, SA and VU only
+  -D, --spi_dc=SPI_DC        SPI DC GPIO number (defaults 24)
+  -E, --egg=EGGNUM           Easter Eggs (see repo for details)
+  -f, --font=FONT            Font used by clock, see list below for details
+  -F, -I, --flip, --invert   Invert the display - if display mounted upside
+                             down
+  -k, --metrics              Show CPU load and temperature (clock mode)
   -l, -i, --log-level=LEVEL, --info=LEVEL
-                               Log Level
-  -m, --meter=MODES            Meter modes, if visualization on specify one or
-                               more meter modes, sa, vu, pk, st, or rn for
-                               random
-  -n, --name=PLAYERNAME        Name of the squeeze device to monitor
-  -o, --oled[=OLEDTYPE]        Specify OLED "driver" type (see options below)
-  -q, -s, --quiet, --silent    Don't produce any output
-  -r, --remain-time            Display remaining time rather than track time
-  -R, --reset=SPI_RST          I2C/SPI reset GPIO number, if needed (defaults
-                               25)
-  -S, --scroll[=SCROLLMODE]    Label scroll mode: 0 (cylon), 1 (infinity left), 2
-                               infinity (right)
-  -v, --visualize              Enable visualization sequence when track playing
-                               (pi only)
-  -V, --verbose                Maximum log level
-  -w, --weather[=APIKEY,UNITS] Climacell API key and required units (optional)
-  -W,                          Warnings display or silent connection detection
-  -x, --addr                   OLED address if default does not work - use
-                               i2cdetect to find address (pi only)
-  -z, --nosplash               No (Team Badger) Splash Screen
-  -?, --help                   Give this help list
-      --usage                  Give a short usage message
-      --version                Print program version
+                             Log Level
+  -m, --meter=MODES          Meter modes, if visualization on specify one or
+                             more meter modes, sa, vu, pk, st, or rn for
+                             random
+  -n, --name=PLAYERNAME      Name of the squeeze device to monitor
+  -o, --oled[=OLEDTYPE]      Specify OLED "driver" type (see options below)
+  -P, --barstyle=[BARSTYLE]  Barstyle, spectrum variants only
+  -q, -s, --quiet, --silent  Don't produce any output
+  -r, --remain-time          Display remaining time rather than track time
+  -R, --reset=SPI_RST        I2C/SPI reset GPIO number, if needed (defaults
+                             25)
+  -S, --scroll[=SCROLLMODE]  Label scroll mode: 0 (cylon), 1 (infinity left), 2
+                             infinity (right)
+  -u, --latlon=LAT,LON, --location=LAT,LON
+                             Latitude and Longitude - your location
+  -v, --visualize            Enable visualization sequence when track playing
+                             (pi only)
+  -V, --verbose              Maximum log level
+  -w, --warnings[=WARNING]   Show warnings on disconnect or server down
+  -W, --weather=APIKEY,UNITS, --apikey=APIKEY,UNITS
+                             Climacell API key and required units (optional)
+  -x, --addr=OLEDADDR        OLED address if default does not work - use
+                             i2cdetect to find address (pi only)
+  -z, --nosplash             No (Team Badger) Splash Screen
+  -?, --help                 Give this help list
+      --usage                Give a short usage message
+      --version              Print program version
 
 Supported OLED types:
     1 ...: Adafruit SPI 128x64
@@ -138,7 +146,9 @@ And, in the Various Options add *-v*
 
 See the squeezelite page for more details
 
-We also need to install the i2c tools library so we can review setup and communicate with the OLED screen
+If your running an I2C device and unsure of the address being used then we also need to install the i2c tools library so we can review setup and communicate with the OLED screen.  If you know the address or are using an SPI device 
+
+## install i2c-tools-dev
 
 This can be done from the command line or via the pCP web forms.
 
@@ -154,6 +164,7 @@ Alternatively use the following instructions
 
 SSH to your pCP device.
 
+see notes on the first two commands
 and, then type (copy and paste):
 
 ```bash
@@ -166,9 +177,9 @@ chmod +xX gomonitor
 pcp bu
 ```
 
-The first two commands take care of the required extension and perform a backup.  Again if your device is SPI you won't need those two steps.
+The first two commands take care of the required extension and perform a backup.  Again if your device is SPI or you know the address of the I2C display you won't need those two steps.
 
-The remaining commands download the monitor archive to pCP, extracts the contents, set execution permissions, and finally backup.
+The remaining commands download the monitor archive to pCP, extracts the contents, sets permissions, and finally backup.
 
 With that you can manually start the monitor specifying the visualization you'd like to display, vu, sa, pk, st, sm or rn
 
@@ -190,13 +201,13 @@ Add a *User command*, here for example requesting the random visualizations
 /mnt/mmcblk0p2/tce/gomonitor rn
 ```
 
-Additional supported commands may also be specified, here we request a specific visualizer sequence, the device driver, override the default OLED address, request downmixed visualizers, and automated display brightness at dawn and dusk
+Additional supported commands may also be specified, here we request a specific visualizer sequence, the device driver, override the default OLED address, request downmixed visualizers, automated display brightness at dawn and dusk, and a barstyle for the SA and PK visualizations.
 
 ```bash
-/mnt/mmcblk0p2/tce/gomonitor vu,sa,pk,st -o6 -x 0x3c -db
+/mnt/mmcblk0p2/tce/gomonitor vu,sa,pk,st -o6 -x 0x3c -db --barstyle 7
 ```
 
-the visualization parameter <b>must</b> always be specified first
+when using the *gomonitor* script the visualization parameter <b>must</b> always be specified first
 
 ## Easter Eggs
 <p>
@@ -212,7 +223,7 @@ There are currently 7 easter egg modes:
 - <b>[4]</b> VCR with flashing 12:00 AM clock! No additional animation - the clock is annoying enough.
 - <b>[5]</b> An old bakelite radio. Minor animation, radio changes station as track progresses.
 - <b>[6]</b> An old analog TV in all its 5x4 glory... VHF or UHF... no it's worms?!?
-- <b>[7]</b> A crusty old IBM PS/2 clone... playing pong! Equally matched "AI" players make for an uneventful game!
+- <b>[7]</b> A crusty old IBM PS/2 clone... playing pong! Equally matched "AI" players make for an uneventful game until they cheat!
 
 Specify -E[1-7] to display eggs on track playback
 </p>

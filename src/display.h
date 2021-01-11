@@ -35,9 +35,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "ArduiPi_OLED.h"
 #include "eggs.h"
 #include "visdata.h"
-#include "ArduiPi_OLED.h"
 
 #define MAX_LINES 8
 
@@ -178,13 +178,20 @@ void softClear(void);
 #define VIZSIG struct vissy_meter_t *vissy_meter, DrawVisualize *layout
 //void stereoVU(struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
 void stereoVU(VIZSIG);
-void stereoSpectrum(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
-void ovoidSpectrum(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
-void mirrorSpectrum(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
-void reflectSpectrum(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
-void stereoPeakH(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
-void simplePeakH(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
-void downmixPeakH(VIZSIG);//struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void stereoSpectrum(
+    VIZSIG); //struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void ovoidSpectrum(
+    VIZSIG); //struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void mirrorSpectrum(
+    VIZSIG); //struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void reflectSpectrum(
+    VIZSIG); //struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void stereoPeakH(
+    VIZSIG); //struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void simplePeakH(
+    VIZSIG); //struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
+void downmixPeakH(
+    VIZSIG); //struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout);
 
 // audio attributes
 void putVolume(bool v, char *buff);
@@ -260,5 +267,7 @@ void shotAndDisplay(void);
 
 void nagSaverSetup(void);
 void nagSaverNotes(void);
+
+void displayPowered(bool on);
 
 #endif

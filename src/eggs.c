@@ -1,5 +1,7 @@
 /*
- *	(c) 2020 Stuart Hunter
+ *  eggs.c
+ * 
+ *	(c) 2020-21 Stuart Hunter
  *
  *	TODO:
  *
@@ -41,8 +43,7 @@ int lrand(int l, int u) {
 void putTapeType(audio_t audio) {
 
     const uint8_t cdata[] = {
-        0xcc, 0x44, 0x44, 0x44, 0x30, 0x10, 
-        0x10, 0x10, 0xd4, 0x54, 0x54, 0x48,
+        0xcc, 0x44, 0x44, 0x44, 0x30, 0x10, 0x10, 0x10, 0xd4, 0x54, 0x54, 0x48,
     };
     int szw = 6;
     int szh = 4;
@@ -1572,6 +1573,7 @@ void drawNet(pongem_t *p) {
         putPixel(zx, yy + 1, BLACK);
     }
 }
+
 void animatePong(pongem_t *p) {
 
     // clear the court
@@ -1600,8 +1602,8 @@ void animatePong(pongem_t *p) {
     else if (p->ball.pos.x >= (p->court.pos.x + p->court.w)) {
         p->plscore++;
         centerBall(&p->ball, p->court);
-        resetPaddle(&p->left, p->court);
         resetPaddle(&p->right, p->court);
+        resetPaddle(&p->left, p->court);
     }
 
     // collision logic top and bottom
@@ -1649,8 +1651,15 @@ void animatePong(pongem_t *p) {
         p->ball.pos.y <= (p->right.pos.y + p->right.h)) {
         p->ball.phys.accel.x *= -1;
         p->ball.phys.accel.y *= -1;
-        p->ball.phys.accel.y += lrand(-10, 10) / 10;
-        p->ball.phys.accel.x += lrand(-10, 10) / 10;
+        // if the ball hit the bat edge boost
+        int limit = 10;
+        if ((abs(p->ball.pos.y - p->right.pos.y) < 2) ||
+            (abs(p->ball.pos.y - (p->right.pos.y + p->right.h)) < 2)) {
+            limit = 15;
+        }
+        p->ball.phys.accel.y += lrand(-limit, limit) / 10;
+        p->ball.phys.accel.x += lrand(-limit, limit) / 10;
+        // if the ball hit the bat edge boost
     }
 
     // collision left paddle
@@ -1659,8 +1668,15 @@ void animatePong(pongem_t *p) {
         p->ball.pos.y <= (p->left.pos.y + p->left.h)) {
         p->ball.phys.accel.x *= -1;
         p->ball.phys.accel.y *= -1;
-        p->ball.phys.accel.y += lrand(-10, 10) / 10;
-        p->ball.phys.accel.x += lrand(-10, 10) / 10;
+        // if the ball hit the bat edge boost
+        int limit = 10;
+        if ((abs(p->ball.pos.y - p->right.pos.y) < 2) ||
+            (abs(p->ball.pos.y - (p->right.pos.y + p->right.h)) < 2)) {
+            limit = 15;
+        }
+        p->ball.phys.accel.y += lrand(-limit, limit) / 10;
+        p->ball.phys.accel.x += lrand(-limit, limit) / 10;
+        // if the ball hit the bat edge boost
     }
 
     // scores

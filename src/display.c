@@ -1,6 +1,6 @@
 /*
  *	(c) 2015 László TÓTH
- *	(c) 2020 Stuart Hunter
+ *	(c) 2020-21 Stuart Hunter
  *
  *	TODO:
  *
@@ -65,6 +65,7 @@ uint16_t _char_height = 8;
 uint16_t _tt_char_width = 4; // 3x5 font
 uint16_t _tt_char_height = 6;
 bool isFlipped = false;
+bool isPowered = true;
 enum ScrollMode scrollMode = SCROLLMODE_CYLON;
 sme scroll[MAX_LINES];
 bool smestate[MAX_LINES];
@@ -326,8 +327,10 @@ Pin	Symbole	Niveau	Function
     }
 
     display.setFont();
-    if (init)
+    if (init) {
+        isPowered = true;
         fontMetrics();
+    }
     display.setBrightness(0);
     resetDisplay(1);
     scrollerInit();
@@ -343,6 +346,15 @@ void closeDisplay(void) {
 void clearDisplay(void) {
     display.clearDisplay();
     display.display();
+}
+
+void displayPowered(bool on) {
+    if (!on) {
+        clearDisplay();
+        // should dim too ???
+        //display.setBrightness(0)
+    }
+    isPowered = on;
 }
 
 void vumeter2upl(void) {

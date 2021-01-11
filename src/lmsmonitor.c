@@ -2,7 +2,7 @@
  *	lmsmonitor.c
  *
  *	(c) 2015 László TÓTH
- *	(c) 2020 Stuart Hunter
+ *	(c) 2020-21 Stuart Hunter
  *
  *	TODO:
  *          DONE - Automatic server discovery
@@ -378,6 +378,38 @@ void setLastRemainingTime(char *rtm, DrawTime rdt) {
     }
 }
 
+void softClockReset(bool cd = true) {
+    if (acquireOptLock()) {
+        strcpy(glopt->lastTime, "XX:XXX");
+        strcpy(glopt->lastTemp, "00000");
+        strcpy(glopt->lastLoad, "00000");
+        glopt->refreshClock = true;
+        pthread_mutex_unlock(&glopt->update);
+        if (cd)
+            clearDisplay();
+    }
+}
+
+bool screenPowered(bool powered) {
+    bool ret = true;
+    if (glopt->checkPower) {
+        instrument(__LINE__, __FILE__, "power test");
+        displayPowered(powered);
+        if (powered != glopt->powered) {
+            if (acquireOptLock()) {
+                glopt->powered = powered;
+                pthread_mutex_unlock(&glopt->update);
+            }
+        }
+        if (!powered) {
+            softClockReset();
+            softClockRefresh(false);
+        }
+        ret = glopt->powered;
+    }
+    return ret;
+}
+
 void setSleepTime(int st) {
     if (st != glopt->sleepTime)
         if (acquireOptLock()) {
@@ -394,18 +426,6 @@ void putCPUMetrics(int y) {
         sprintf(buff, "%s %s", glopt->lastLoad, glopt->lastTemp);
         putTextCenterColor(y, buff, WHITE);
         pthread_mutex_unlock(&glopt->update);
-    }
-}
-
-void softClockReset(bool cd = true) {
-    if (acquireOptLock()) {
-        strcpy(glopt->lastTime, "XX:XXX");
-        strcpy(glopt->lastTemp, "00000");
-        strcpy(glopt->lastLoad, "00000");
-        glopt->refreshClock = true;
-        pthread_mutex_unlock(&glopt->update);
-        if (cd)
-            clearDisplay();
     }
 }
 
@@ -705,7 +725,7 @@ int main(int argc, char *argv[]) {
         .nagDone = false,
         .visualize = false,
         .meterMode = false,
-        .barstyle = BARSTYLE_SOLID,
+        .barstyle = BARSTYLE_SOLID_PKCAP,
         .clockMode = MON_CLOCK_OFF,
         .extended = false,
         .remaining = false,
@@ -726,6 +746,8 @@ int main(int argc, char *argv[]) {
         .showWarnings = true,
         .pauseDisplay = false,
         .pauseMessage = {0},
+        .powered = true,
+        .checkPower = false,
 #endif
     };
 
@@ -775,8 +797,6 @@ int main(int argc, char *argv[]) {
             setVisList(vinit);
         }
     }
-
-    setBarStyle(lmsopt.barstyle);
 
     // init OLED display IIC & SPI supported
     if (initDisplay(lmsopt) == EXIT_FAILURE) {
@@ -948,6 +968,13 @@ int main(int argc, char *argv[]) {
             activateVisualizer(); // fixed all-in-one (when playing)
         }
 
+        printf("%s\n", barStyleInfo[lmsopt.barstyle]);
+        instrument(__LINE__, __FILE__, "<- Bar Style>");
+        setBarStyle(lmsopt.barstyle);
+        sprintf(stbl, "%s %s\n", labelIt("Bar Style", LABEL_WIDTH, "."),
+                barStyleInfo[lmsopt.barstyle]);
+        instrument(__LINE__, __FILE__, "-> Bar Style>");
+
         if (!(lmsopt.allInOne)) {
             instrument(__LINE__, __FILE__, "activate visualization cycling");
             vizcycletimer = timer_start(254 * 1000, cycleVisualize,
@@ -977,6 +1004,9 @@ int main(int argc, char *argv[]) {
     putMSG(stbl, LL_INFO);
     sprintf(stbl, "%s %s\n", labelIt("Show Warnings", LABEL_WIDTH, "."),
             ((lmsopt.showWarnings) ? "Yes" : "No"));
+    putMSG(stbl, LL_INFO);
+    sprintf(stbl, "%s %s\n", labelIt("Power Saver", LABEL_WIDTH, "."),
+            ((lmsopt.checkPower) ? "Yes" : "No"));
     putMSG(stbl, LL_INFO);
 
     clearDisplay(); // clears the  splash if shown
@@ -1021,9 +1051,7 @@ int main(int argc, char *argv[]) {
 
 #endif
                 if (isTrackPlaying()) {
-
 #ifdef __arm__
-
                     instrument(__LINE__, __FILE__, "isPlaying");
 
                     // Threaded logic in play - DO NOT MODIFY
@@ -1064,12 +1092,15 @@ int main(int argc, char *argv[]) {
                         if (aio.eeFXActive)
                             aio.eeFXActive = false;
                         aio.compound[0] = {0};
-                        if (weather.active) {
-                            clockWeatherPage(&weather);
+                        if (screenPowered(playerPowered())) {
+                            if (weather.active) {
+                                clockWeatherPage(&weather);
+                            } else {
+                                clockPage();
+                            }
                         } else {
-                            clockPage();
+                            baselineClimacell(&weather, true);
                         }
-
                     } else {
                         saverPage();
                     }
@@ -1459,7 +1490,7 @@ void clockWeatherPage(climacell_t *cc) {
         activateForecast(cc);
         // paint forecast
         int idxi = 0;
-        for (int idx = idxi; idx < CC_DATA_NOW-1; idx++) {
+        for (int idx = idxi; idx < CC_DATA_NOW - 1; idx++) {
             putWeatherForecast(((loctm.tm_sec < 2) && (idxi == idx)), x, 2,
                                &cc->ccforecast[idx]);
             x += divx;

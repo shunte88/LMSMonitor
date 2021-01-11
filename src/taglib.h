@@ -23,9 +23,9 @@
 
 #define MAXTAG_DATA 255
 
+#include "common.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "common.h"
 
 typedef struct player_t {
     char playerName[128];
@@ -88,13 +88,14 @@ typedef enum tagtypes_t {
     DURATION,
     MODE,
     PERFORMER,
+    POWER,
     REMAINING,
     REMOTE,
     REMOTETITLE,
     REPEAT,
     SAMPLERATE,
     SAMPLESIZE,
-    SERVER,  // not a real tag - just using infrastructure
+    SERVER, // not a real tag - just using infrastructure
     SHUFFLE,
     TIME,
     TITLE,

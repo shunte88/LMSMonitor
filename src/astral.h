@@ -1,5 +1,5 @@
 /*
- *	(c) 2020 Stuart Hunter
+ *	(c) 2020-21 Stuart Hunter
  *
  *  Capture ISP IP, we assume its close (enough)
  *  Use the IP to derive lat/long
@@ -34,7 +34,7 @@
 
 #include "climacell.h"
 
-typedef enum solarTime { AS_CALC = 0, AS_WEATHER = 1 } solarTime;
+enum solarTime { AS_CALC = 0, AS_WEATHER = 1 };
 
 typedef struct isp_locale_t {
     time_t sunrise;

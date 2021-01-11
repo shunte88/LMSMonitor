@@ -1,5 +1,5 @@
 /*
- *	(c) 2020 Stuart Hunter
+ *	(c) 2020, 2021 Stuart Hunter
  *
  *	TODO:
  *
@@ -54,7 +54,21 @@ void setPlaying(bool p) {
         play_is_active = p;
 }
 
-void setBarStyle(enum BarStyle bs) { downmix.barStyle = bs; }
+void setBarStyle(enum BarStyle bs) {
+    if (isEmptyStr(downmix.downmix)) {
+        setDownmix(0, 0);
+        setDownmixAttrs(0, 0, maxXPixel() - 2, maxYPixel() - 4, 0, maxXPixel(),
+                        maxYPixel(), bs);
+        if (!downmix.barStyle) {
+            downmix.barStyle = bs;
+        }
+    } else {
+        downmix.barStyle = bs;
+    }
+    if (!downmix.barStyle) {
+        downmix.barStyle = BARSTYLE_SOLID;
+    }
+}
 
 bool setVisMode(vis_type_t mode) {
     bool ret = false;
@@ -216,11 +230,11 @@ void visualize(struct vissy_meter_t *vissy_meter) {
 
         if (isEmptyStr(downmix.downmix)) {
             setDownmix(0, 0);
-            if(!downmix.barStyle) {
-                downmix.barStyle = BARSTYLE_SOLID;
-            }
             setDownmixAttrs(0, 0, maxXPixel() - 2, maxYPixel() - 4, 0,
                             maxXPixel(), maxYPixel(), downmix.barStyle);
+            if (!downmix.barStyle) {
+                downmix.barStyle = BARSTYLE_SOLID;
+            }
             instrument(__LINE__, __FILE__, "<-Fixed Downmix");
         }
         if (isEmptyStr(vis_mode)) {

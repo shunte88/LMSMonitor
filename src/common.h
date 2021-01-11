@@ -1,6 +1,6 @@
 /*
  *	(c) 2015 László TÓTH
- *	(c) 2020 Stuart Hunter
+ *	(c) 2020-21 Stuart Hunter
  *
  *	Todo:
  *
@@ -30,7 +30,7 @@
 #define BSIZE8 BUFSIZ
 
 #define APPNAME "LMSMonitor"
-#define VERSION "0.4.65"
+#define VERSION "0.4.68"
 #define APPSIG APPNAME " " VERSION
 
 #define LABEL_WIDTH 22
@@ -82,8 +82,8 @@ void instrument(const int line, const char *name, const char *msg);
 
 int alreadyRunning(void);
 
-void addDays(struct tm* date, int days);
+void addDays(struct tm *date, int days);
 
-const char *strzip(const char *s1,const char *s2, const char *sep);
+const char *strzip(const char *s1, const char *s2, const char *sep);
 
 #endif

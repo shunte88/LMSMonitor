@@ -1,6 +1,9 @@
 /*
+ *
+ *	sliminfo.h
+ *
+ *	(c) 2020-21 Stuart Hunter
  *	(c) 2015 László TÓTH
- *	(c) 2020 Stuart Hunter
  *
  *	Todo:
  *
@@ -35,6 +38,7 @@ void error(const char *msg);
 void askRefresh(void);
 bool isRefreshed(void);
 bool playerConnected(void);
+bool playerPowered(void);
 
 char *getPlayerMAC(void);
 char *getPlayerID(void);
