@@ -64,6 +64,7 @@ const char *whatsitJson(int typ) {
 }
 
 bool storeTagData(tag_t *st, char *value) {
+    // need to dealwith escaped quotes here
     if (0 != strcicmp(st->tagData, value)) {
         strcpy(st->tagData, value);
         st->changed = true;

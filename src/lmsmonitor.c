@@ -50,8 +50,6 @@
 
 #include "lmsopts.h"
 
-#ifdef __arm__
-
 // clang-format off
 // retain this include order
 #include "ArduiPi_OLED_lib.h"
@@ -76,7 +74,6 @@
 
 struct MonitorAttrs *glopt;
 struct climacell_t weather;
-#endif
 
 #define LINE_NUM 5
 
@@ -105,7 +102,6 @@ void before_exit(void) {
     if (!freed) { // ??? race condition
         freed = true;
         closeSliminfo();
-#ifdef __arm__
         scrollerFreeze();
         clearDisplay();
         closeDisplay();
@@ -115,7 +111,6 @@ void before_exit(void) {
 #endif
         vissySHMEMFinalize();
         timer_finalize(); // should be all set ???
-#endif
     }
     printf("All Done\nBye Bye.\n");
 }
@@ -156,7 +151,6 @@ void attach_signal_handler(void) {
 
 // "page" definitions, no break-out for visualizer
 void playingPage(void);
-#ifdef __arm__
 
 inching_t *balls = NULL;
 pongem_t *game = NULL;
@@ -177,8 +171,6 @@ void clockWeatherPage(climacell_t *cc);
 void cassettePage(A1Attributes *aio);
 // generic eggs - similar layout
 void OvaTimePage(A1Attributes *aio);
-
-#endif
 
 void get_mac_simple(const char *interface, char *mac) {
     // not so simple - wired or not and potential for alternate interface names
@@ -246,13 +238,9 @@ void signature(char *executable) {
 bool isTrackPlaying(void) {
     bool p = false;
     p = (strcmp("play", tags[MODE].tagData) == 0);
-#ifdef __arm__
     setPlaying(p);
-#endif
     return p;
 }
-
-#ifdef __arm__
 
 void setupPlayMode(void) {
     for (int line = 1; line < LINE_NUM; line++) {
@@ -390,6 +378,19 @@ void softClockReset(bool cd = true) {
     }
 }
 
+void displayBrightness(uint8_t bright, bool flip) {
+    // brigtness, event and "power save"
+    if (bright != glopt->currbright) {
+        if (acquireOptLock()) {
+            if (ZERO_BRIGHTNESS == bright) // zero - power mode
+                glopt->lastbright = glopt->currbright;
+            glopt->currbright = bright;
+            pthread_mutex_unlock(&glopt->update);
+        }
+        setDisplayBrightness(glopt->currbright, flip);
+    }
+}
+
 bool screenPowered(bool powered) {
     bool ret = true;
     if (glopt->checkPower) {
@@ -400,6 +401,10 @@ bool screenPowered(bool powered) {
                 glopt->powered = powered;
                 pthread_mutex_unlock(&glopt->update);
             }
+            if (powered)
+                displayBrightness(glopt->lastbright, false);
+            else
+                displayBrightness(ZERO_BRIGHTNESS, false);
         }
         if (!powered) {
             softClockReset();
@@ -685,8 +690,6 @@ void sampleDetails(audio_t *audio, bool freeze = false) {
         tags[SHUFFLE].valid ? strtol(tags[SHUFFLE].tagData, NULL, 10) : 0;
 }
 
-#endif
-
 int main(int argc, char *argv[]) {
 
     struct arguments arguments;
@@ -710,7 +713,6 @@ int main(int argc, char *argv[]) {
 
     struct MonitorAttrs lmsopt = {
         .playerName = NULL,
-#ifdef __arm__
         .oledAddrL = 0x3c,
         .oledAddrR = 0x3c,
         .vizHeight = 64,
@@ -748,10 +750,8 @@ int main(int argc, char *argv[]) {
         .pauseMessage = {0},
         .powered = true,
         .checkPower = false,
-#endif
     };
 
-#ifdef __arm__
     if (pthread_mutex_init(&lmsopt.update, NULL) != 0) {
         closeDisplay();
         printf("\nLMS Options mutex init has failed\n");
@@ -764,24 +764,17 @@ int main(int argc, char *argv[]) {
     lmsopt.clockFont = MON_FONT_CLASSIC;
     glopt = &lmsopt;
     strcpy(remTime, "XXXXX");
-
-#endif
-
     char *thatMAC = NULL;
     char thisMAC[18];
     strcpy(thisMAC, get_mac_address());
 
-#ifdef __arm__
 #ifdef SSE_VIZDATA
     Options opt;
 #endif
     srand(time(0));
-#endif
 
     arguments.lmsopt = &lmsopt;
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
-
-#ifdef __arm__
 
     if (lmsopt.allInOne) {
         lmsopt.meterMode = true;
@@ -811,11 +804,8 @@ int main(int argc, char *argv[]) {
         displayBrightness(MAX_BRIGHTNESS, false);
     }
 
-#endif
-
     signature(argv[0]);
 
-#ifdef __arm__
     pi_vers_t *pv = piVersion();
     sprintf(stbl, "%s %s\n", labelIt("Platform", LABEL_WIDTH, "."), pv->model);
     putMSG(stbl, LL_DEBUG);
@@ -835,14 +825,10 @@ int main(int argc, char *argv[]) {
                               (void *)NULL);
     instrument(__LINE__, __FILE__, "generalReset active");
 
-#endif
-
     // init here - splash delay mucks the refresh flagging
     if ((tags = initSliminfo(lmsopt.playerName)) == NULL) {
         exit(EXIT_FAILURE);
     }
-
-#ifdef __arm__
 
     // setup brightness event (sunrise/sunset)
     if ((lmsopt.astral) && (initAstral())) {
@@ -1022,11 +1008,8 @@ int main(int argc, char *argv[]) {
             timer_start(2000, onlineTests, TIMER_PERIODIC, (void *)&aio);
     }
 
-#endif
-
     while (true) {
 
-#ifdef __arm__
         if (lmsopt.pauseDisplay) {
             warningsPage();
             refreshDisplay();
@@ -1035,10 +1018,11 @@ int main(int argc, char *argv[]) {
             askRefresh();
             dodelay(lmsopt.sleepTime);
         } else {
-#endif
+
             if (isRefreshed()) {
 
-#ifdef __arm__
+                // new modifier - power on/off
+                screenPowered(playerPowered());
 
                 instrument(__LINE__, __FILE__, "isRefreshed");
                 if (softlySoftly) {
@@ -1049,9 +1033,8 @@ int main(int argc, char *argv[]) {
                     clearDisplay(); // refreshDisplay();
                 }
 
-#endif
                 if (isTrackPlaying()) {
-#ifdef __arm__
+
                     instrument(__LINE__, __FILE__, "isPlaying");
 
                     // Threaded logic in play - DO NOT MODIFY
@@ -1076,12 +1059,9 @@ int main(int argc, char *argv[]) {
                             allInOnePage(&aio);
                         }
                     }
-                    // Threaded logic in play - DO NOT MODIFY
-#else
-                playingPage();
-#endif
+
                 } else {
-#ifdef __arm__
+
                     instrument(__LINE__, __FILE__, "activeScroller test");
                     if (activeScroller()) {
                         scrollerFreeze();
@@ -1092,54 +1072,40 @@ int main(int argc, char *argv[]) {
                         if (aio.eeFXActive)
                             aio.eeFXActive = false;
                         aio.compound[0] = {0};
+                        /***
                         if (screenPowered(playerPowered())) {
-                            if (weather.active) {
-                                clockWeatherPage(&weather);
-                            } else {
-                                clockPage();
-                            }
+                            ***/
+                        if (weather.active) {
+                            clockWeatherPage(&weather);
                         } else {
-                            baselineClimacell(&weather, true);
+                            clockPage();
                         }
                     } else {
                         saverPage();
                     }
-#endif
+
                 } // playing
 
                 askRefresh();
 
             } // isRefreshed
 
-#ifdef __arm__
             if (lmsopt.nagDone)
                 refreshDisplay();
-#endif
 
-#ifdef __arm__
-//setSnapOff();
-#endif
-
-#ifdef __arm__
+            //setSnapOff();
 
             if (lmsopt.sleepTime < 1)
                 setSleepTime(SLEEP_TIME_LONG);
             dodelay(lmsopt.sleepTime);
-#else
-        dodelay(SLEEP_TIME_LONG);
-#endif
 
-#ifdef __arm__
         } // not paused
-#endif
 
     } // main loop
 
     before_exit();
     return 0;
 }
-
-#ifdef __arm__
 
 bool nagSetup = true;
 void saverPage(void) {
@@ -1157,9 +1123,7 @@ void saverPage(void) {
         updStatusPage();
     }
 }
-#endif
 
-#ifdef __arm__
 void clockPage(void) {
 
     char buff[255];
@@ -1183,41 +1147,43 @@ void clockPage(void) {
     softVisualizeRefresh(true);
     setSleepTime(SLEEP_TIME_LONG);
 
-    instrument(__LINE__, __FILE__, "cpu Metrics?");
-    if (glopt->showTemp)
-        putCPUMetrics(39);
+    if ((ZERO_BRIGHTNESS != glopt->currbright)) {
+        instrument(__LINE__, __FILE__, "cpu Metrics?");
+        if (glopt->showTemp)
+            putCPUMetrics(39);
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    time_t now = tv.tv_sec;
-    struct tm loctm = *localtime(&now);
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        time_t now = tv.tv_sec;
+        struct tm loctm = *localtime(&now);
 
-    // time - 12 or 24 hour formats
-    if (MON_CLOCK_12H == glopt->clockMode) { // 12H A/P
-        sprintf(buff, "%02d:%02d%s",
-                ((loctm.tm_hour > 12) ? loctm.tm_hour - 12 : loctm.tm_hour),
-                loctm.tm_min, ((loctm.tm_hour > 12) ? "P" : "A"));
-        dt.charWidth = 20;
-        dt.bufferLen = (3 * dt.charHeight);
-    } else { // 24H vanilla
-        sprintf(buff, "%02d:%02d", loctm.tm_hour, loctm.tm_min);
+        // time - 12 or 24 hour formats
+        if (MON_CLOCK_12H == glopt->clockMode) { // 12H A/P
+            sprintf(buff, "%02d:%02d%s",
+                    ((loctm.tm_hour > 12) ? loctm.tm_hour - 12 : loctm.tm_hour),
+                    loctm.tm_min, ((loctm.tm_hour > 12) ? "P" : "A"));
+            dt.charWidth = 20;
+            dt.bufferLen = (3 * dt.charHeight);
+        } else { // 24H vanilla
+            sprintf(buff, "%02d:%02d", loctm.tm_hour, loctm.tm_min);
+        }
+
+        if (strcmp(glopt->lastTime, buff) != 0)
+            setLastTime(buff, dt);
+
+        // colon (blink)
+        drawTimeBlink(((loctm.tm_sec % 2) ? ' ' : ':'), &dt);
+
+        // seconds
+        drawHorizontalBargraph(
+            2, 48, maxXPixel() - 4, 4,
+            (int)((100 * (loctm.tm_sec + ((double)tv.tv_usec / 1000000)) /
+                   60)));
+
+        // date
+        strftime(buff, sizeof(buff), "%A %Y-%m-%02d", &loctm);
+        putTextToCenter(54, buff);
     }
-
-    if (strcmp(glopt->lastTime, buff) != 0)
-        setLastTime(buff, dt);
-
-    // colon (blink)
-    drawTimeBlink(((loctm.tm_sec % 2) ? ' ' : ':'), &dt);
-
-    // seconds
-    drawHorizontalBargraph(
-        2, 48, maxXPixel() - 4, 4,
-        (int)((100 * (loctm.tm_sec + ((double)tv.tv_usec / 1000000)) / 60)));
-
-    // date
-    strftime(buff, sizeof(buff), "%A %Y-%m-%02d", &loctm);
-    putTextToCenter(54, buff);
-
     // set changed so we'll repaint on play
     setupPlayMode();
     refreshDisplay();
@@ -1237,177 +1203,184 @@ void OvaTimePage(A1Attributes *aio) {
     if (glopt->refreshLMS) {
         resetDisplay(1);
         softPlayRefresh(false);
-        switch (aio->eeMode) {
-            case EE_NONE:
-            case EE_CASSETTE: break;
-            case EE_VINYL: technicsSL1200(true); break;
-            case EE_REEL2REEL: reelToReel(true); break;
-            case EE_VCR: vcrPlayer(true); break;
-            case EE_RADIO: radio50(true); break;
-            case EE_TVTIME: TVTime(true); break;
-            case EE_PCTIME: PCTime(true); break;
+        if (ZERO_BRIGHTNESS != glopt->currbright) {
+            switch (aio->eeMode) {
+                case EE_NONE:
+                case EE_CASSETTE: break;
+                case EE_VINYL: technicsSL1200(true); break;
+                case EE_REEL2REEL: reelToReel(true); break;
+                case EE_VCR: vcrPlayer(true); break;
+                case EE_RADIO: radio50(true); break;
+                case EE_TVTIME: TVTime(true); break;
+                case EE_PCTIME: PCTime(true); break;
+            }
         }
     }
-
     setNagDone(false); // do not set refreshLMS
     softClockReset(false);
     softVisualizeRefresh(true);
 
-    // cfun noodling
-    if (!aio->eeFXActive)
-        aio->eeFXActive = true;
+    if (ZERO_BRIGHTNESS != glopt->currbright) {
 
-    audio_t audioDetail = {.samplerate = 44.1,
-                           .samplesize = 16,
-                           .audioIcon = 1}; // 2 HD 3 SD 4 DSD
+        // cfun noodling
+        if (!aio->eeFXActive)
+            aio->eeFXActive = true;
 
-    sampleDetails(&audioDetail);
-    audioDetail.audioIcon = 1;
-    if (1 == audioDetail.samplesize)
-        audioDetail.audioIcon++;
-    else if (16 != audioDetail.samplesize)
-        audioDetail.audioIcon--;
+        audio_t audioDetail = {.samplerate = 44.1,
+                               .samplesize = 16,
+                               .audioIcon = 1}; // 2 HD 3 SD 4 DSD
 
-    switch (aio->eeMode) {
-        case EE_NONE:
-        case EE_CASSETTE: break;
-        case EE_VINYL:
-            technicsSL1200(false);
-            putSL1200Btn(audioDetail);
-            break;
-        case EE_REEL2REEL:
-            reelToReel(false);
-            putReelToReel(audioDetail);
-            break;
-        case EE_VCR:
-            vcrPlayer(false);
-            putVcr(audioDetail);
-            break;
-        case EE_RADIO:
-            radio50(false);
-            putRadio(audioDetail);
-            break;
-        case EE_TVTIME:
-            TVTime(false);
-            putTVTime(audioDetail);
-            break;
-        case EE_PCTIME:
-            PCTime(false);
-            putPCTime(audioDetail);
-            break;
-    }
+        sampleDetails(&audioDetail);
+        audioDetail.audioIcon = 1;
+        if (1 == audioDetail.samplesize)
+            audioDetail.audioIcon++;
+        else if (16 != audioDetail.samplesize)
+            audioDetail.audioIcon--;
 
-    // setup compound scrollers
-    bool filled = false;
-    bool changed = false;
-    for (int line = 0; line < A1LINE_NUM; line++) {
-        filled = false;
-        int myline = line + 5;
-        for (tagtypes_t *t = a1layout[line]; *t != MAXTAG_TYPES; t++) {
-            if (tags[*t].valid) {
-                filled = true;
-                if (tags[*t].changed) {
-                    changed = true;
-                    if (0 == line)
-                        strncpy(aio->title, tags[*t].tagData, 254);
-                    else
-                        strncpy(aio->artist, tags[*t].tagData, 254);
+        switch (aio->eeMode) {
+            case EE_NONE:
+            case EE_CASSETTE: break;
+            case EE_VINYL:
+                technicsSL1200(false);
+                putSL1200Btn(audioDetail);
+                break;
+            case EE_REEL2REEL:
+                reelToReel(false);
+                putReelToReel(audioDetail);
+                break;
+            case EE_VCR:
+                vcrPlayer(false);
+                putVcr(audioDetail);
+                break;
+            case EE_RADIO:
+                radio50(false);
+                putRadio(audioDetail);
+                break;
+            case EE_TVTIME:
+                TVTime(false);
+                putTVTime(audioDetail);
+                break;
+            case EE_PCTIME:
+                PCTime(false);
+                putPCTime(audioDetail);
+                break;
+        }
+
+        // setup compound scrollers
+        bool filled = false;
+        bool changed = false;
+        for (int line = 0; line < A1LINE_NUM; line++) {
+            filled = false;
+            int myline = line + 5;
+            for (tagtypes_t *t = a1layout[line]; *t != MAXTAG_TYPES; t++) {
+                if (tags[*t].valid) {
+                    filled = true;
+                    if (tags[*t].changed) {
+                        changed = true;
+                        if (0 == line)
+                            strncpy(aio->title, tags[*t].tagData, 254);
+                        else
+                            strncpy(aio->artist, tags[*t].tagData, 254);
+                    }
                 }
             }
         }
-    }
 
-    if (changed) {
-        sprintf(buff, "%s|%s", aio->artist, aio->title);
-        if ((strcmp(buff, aio->compound) != 0) ||
-            (0 == strlen(aio->compound))) // safe
-        {
-            strncpy(aio->compound, buff, 254);
+        if (changed) {
+            sprintf(buff, "%s|%s", aio->artist, aio->title);
+            if ((strcmp(buff, aio->compound) != 0) ||
+                (0 == strlen(aio->compound))) // safe
+            {
+                strncpy(aio->compound, buff, 254);
 
-            switch (aio->eeMode) {
-                case EE_NONE:
-                case EE_CASSETTE:
-                    putTinyTextMaxWidthP(20, 12, 92, aio->title);
-                    putTinyTextMaxWidthP(20, 18, 92, aio->artist);
-                    break;
-                case EE_VINYL:
-                    putTinyTextMultiMaxWidth(84, 7, 14, 7, aio->compound);
-                    break;
-                case EE_REEL2REEL:
-                    putTinyTextMultiMaxWidth(72, 7, 19, 7, aio->compound);
-                    break;
-                case EE_VCR:
-                    putTinyTextMultiMaxWidth(10, 7, 32, 3, aio->compound);
-                    break;
-                case EE_RADIO:
-                    putTinyTextMultiMaxWidth(71, 7, 20, 7, aio->compound);
-                    break;
-                case EE_TVTIME:
-                    putTinyTextMultiMaxWidth(86, 11, 17, 9, aio->compound);
-                    break;
-                case EE_PCTIME:
-                    putTinyTextMultiMaxWidth(69, 10, 22, 7, aio->compound);
-                    break;
+                switch (aio->eeMode) {
+                    case EE_NONE:
+                    case EE_CASSETTE:
+                        putTinyTextMaxWidthP(20, 12, 92, aio->title);
+                        putTinyTextMaxWidthP(20, 18, 92, aio->artist);
+                        break;
+                    case EE_VINYL:
+                        putTinyTextMultiMaxWidth(84, 7, 14, 7, aio->compound);
+                        break;
+                    case EE_REEL2REEL:
+                        putTinyTextMultiMaxWidth(72, 7, 19, 7, aio->compound);
+                        break;
+                    case EE_VCR:
+                        putTinyTextMultiMaxWidth(10, 7, 32, 3, aio->compound);
+                        break;
+                    case EE_RADIO:
+                        putTinyTextMultiMaxWidth(71, 7, 20, 7, aio->compound);
+                        break;
+                    case EE_TVTIME:
+                        putTinyTextMultiMaxWidth(86, 11, 17, 9, aio->compound);
+                        break;
+                    case EE_PCTIME:
+                        putTinyTextMultiMaxWidth(69, 10, 22, 7, aio->compound);
+                        break;
+                }
+                setSleepTime(SLEEP_TIME_SAVER);
             }
-            setSleepTime(SLEEP_TIME_SAVER);
         }
-    }
 
-    uint16_t pTime =
-        (tags[TIME].valid) ? strtol(tags[TIME].tagData, NULL, 10) : 0;
-    uint16_t dTime =
-        (tags[DURATION].valid) ? strtol(tags[DURATION].tagData, NULL, 10) : 0;
-    double pct = (pTime * 100.00) / (dTime == 0 ? 1 : dTime);
-
-    time_t now = time(NULL);
-    struct tm t = *localtime(&now);
-    bool skipper = false;
-    if (0 == strcmp("1", tags[REMOTE].tagData)) {
-        pct = ((t.tm_sec % 2) ? 50 : 55); // you want some candy ...
-        skipper = true;
-    }
-    DrawTime rdt = {.pos = {18, 13}, .font = MON_FONT_STANDARD};
-
-    switch (aio->eeMode) {
-        case EE_NONE:
-        case EE_CASSETTE: break;
-        case EE_TVTIME:
-            rdt.pos.x = 18;
-            rdt.pos.y = 13;
-            break;
-        case EE_VINYL:
-        case EE_RADIO:
-        case EE_REEL2REEL:
-        case EE_PCTIME:
-            rdt.pos.x = 94;
-            rdt.pos.y = 55;
-            break;
-        case EE_VCR:
-            rdt.pos.x = 90;
-            rdt.pos.y = 17;
-            break;
-    }
-
-    // not hourly compliant!
-    if (!skipper) {
-        uint16_t rTime = (tags[REMAINING].valid)
-                             ? strtol(tags[REMAINING].tagData, NULL, 10)
+        uint16_t pTime =
+            (tags[TIME].valid) ? strtol(tags[TIME].tagData, NULL, 10) : 0;
+        uint16_t dTime = (tags[DURATION].valid)
+                             ? strtol(tags[DURATION].tagData, NULL, 10)
                              : 0;
-        sprintf(buff, "%02d:%02d", rTime / 60, rTime % 60);
-    } else {
-        strcpy(buff,
-               ((t.tm_sec % 2) ? "00:00" : "--:--")); // you want some candy ...
-    }
-    setLastRemainingTime(buff, rdt);
+        double pct = (pTime * 100.00) / (dTime == 0 ? 1 : dTime);
 
-    if ((pct > 99.6) && (aio->eeFXActive)) {
-        aio->eeFXActive = false;
+        time_t now = time(NULL);
+        struct tm t = *localtime(&now);
+        bool skipper = false;
+        if (0 == strcmp("1", tags[REMOTE].tagData)) {
+            pct = ((t.tm_sec % 2) ? 50 : 55); // you want some candy ...
+            skipper = true;
+        }
+        DrawTime rdt = {.pos = {18, 13}, .font = MON_FONT_STANDARD};
+
+        switch (aio->eeMode) {
+            case EE_NONE:
+            case EE_CASSETTE: break;
+            case EE_TVTIME:
+                rdt.pos.x = 18;
+                rdt.pos.y = 13;
+                break;
+            case EE_VINYL:
+            case EE_RADIO:
+            case EE_REEL2REEL:
+            case EE_PCTIME:
+                rdt.pos.x = 94;
+                rdt.pos.y = 55;
+                break;
+            case EE_VCR:
+                rdt.pos.x = 90;
+                rdt.pos.y = 17;
+                break;
+        }
+
+        // not hourly compliant!
+        if (!skipper) {
+            uint16_t rTime = (tags[REMAINING].valid)
+                                 ? strtol(tags[REMAINING].tagData, NULL, 10)
+                                 : 0;
+            sprintf(buff, "%02d:%02d", rTime / 60, rTime % 60);
+        } else {
+            strcpy(buff,
+                   ((t.tm_sec % 2) ? "00:00"
+                                   : "--:--")); // you want some candy ...
+        }
+        setLastRemainingTime(buff, rdt);
+
+        if ((pct > 99.6) && (aio->eeFXActive)) {
+            aio->eeFXActive = false;
+            softClockReset(false);
+        }
+
+        if (EE_VINYL == aio->eeMode) {
+            toneArm(pct, aio->eeFXActive);
+        }
+    } else
         softClockReset(false);
-    }
-
-    if (EE_VINYL == aio->eeMode) {
-        toneArm(pct, aio->eeFXActive);
-    }
 }
 
 void warningsPage(void) {
@@ -1476,54 +1449,57 @@ void clockWeatherPage(climacell_t *cc) {
     softVisualizeRefresh(true);
     setSleepTime(SLEEP_TIME_LONG);
 
-    instrument(__LINE__, __FILE__, "putWeather");
+    if ((ZERO_BRIGHTNESS != glopt->currbright)) {
 
-    // date and time
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    time_t now = tv.tv_sec;
-    struct tm loctm = *localtime(&now);
+        instrument(__LINE__, __FILE__, "putWeather");
 
-    if (0 == (loctm.tm_min % 30)) {
-        int x = 0;
-        int divx = (int)(maxXPixel() / 3);
-        activateForecast(cc);
-        // paint forecast
-        int idxi = 0;
-        for (int idx = idxi; idx < CC_DATA_NOW - 1; idx++) {
-            putWeatherForecast(((loctm.tm_sec < 2) && (idxi == idx)), x, 2,
-                               &cc->ccforecast[idx]);
-            x += divx;
+        // date and time
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        time_t now = tv.tv_sec;
+        struct tm loctm = *localtime(&now);
+
+        if (0 == (loctm.tm_min % 30)) {
+            int x = 0;
+            int divx = (int)(maxXPixel() / 3);
+            activateForecast(cc);
+            // paint forecast
+            int idxi = 0;
+            for (int idx = idxi; idx < CC_DATA_NOW - 1; idx++) {
+                putWeatherForecast(((loctm.tm_sec < 2) && (idxi == idx)), x, 2,
+                                   &cc->ccforecast[idx]);
+                x += divx;
+            }
+
+            // wind it up...
+            uint pc = 57;
+            baselineClimacell(cc, (loctm.tm_sec > pc));
+            glopt->refreshClock = (loctm.tm_sec > pc);
+
+        } else {
+
+            strftime(buff, sizeof(buff), "%A", &loctm);
+            putTextToRight(1, 126, buff);
+
+            strftime(buff, sizeof(buff), "%02d/%m/%y", &loctm);
+            putTextToRight(11, 126, buff);
+
+            strcpy(glopt->lastTime, "XXXXX"); // date and day ride rough
+            sprintf(buff, "%02d:%02d", loctm.tm_hour, loctm.tm_min);
+            setLastTime(buff, dt);
+            // colon (blink)
+            drawTimeBlink(((loctm.tm_sec % 2) ? ' ' : ':'), &dt);
+
+            if ((cc->ccnow.icon.changed) || (cc->ccnow.weather_code.changed)) {
+                fillRectangle(1, 20, 90, 11, BLACK); // erase what came before
+                putText(1, 20, cc->ccnow.icon.text);
+            }
+
+            putWeatherTemp(1, 29, &cc->ccnow);
+            putWeatherIcon(84, 20, &cc->ccnow);
+
+            baselineClimacell(cc, false);
         }
-
-        // wind it up...
-        uint pc = 57;
-        baselineClimacell(cc, (loctm.tm_sec > pc));
-        glopt->refreshClock = (loctm.tm_sec > pc);
-
-    } else {
-
-        strftime(buff, sizeof(buff), "%A", &loctm);
-        putTextToRight(1, 126, buff);
-
-        strftime(buff, sizeof(buff), "%02d/%m/%y", &loctm);
-        putTextToRight(11, 126, buff);
-
-        strcpy(glopt->lastTime, "XXXXX"); // date and day ride rough
-        sprintf(buff, "%02d:%02d", loctm.tm_hour, loctm.tm_min);
-        setLastTime(buff, dt);
-        // colon (blink)
-        drawTimeBlink(((loctm.tm_sec % 2) ? ' ' : ':'), &dt);
-
-        if ((cc->ccnow.icon.changed) || (cc->ccnow.weather_code.changed)) {
-            fillRectangle(1, 20, 90, 11, BLACK); // erase what came before
-            putText(1, 20, cc->ccnow.icon.text);
-        }
-
-        putWeatherTemp(1, 29, &cc->ccnow);
-        putWeatherIcon(84, 20, &cc->ccnow);
-
-        baselineClimacell(cc, false);
     }
     // set changed so we'll repaint on play
     setupPlayMode();
@@ -1553,90 +1529,93 @@ void cassettePage(A1Attributes *aio) {
     softClockReset(false);
     softVisualizeRefresh(true);
 
-    // cassette hub, vinyl "wobble" or reel to reel effects
-    if (!aio->eeFXActive)
-        aio->eeFXActive = true;
+    if (ZERO_BRIGHTNESS != glopt->currbright) {
+        // cassette hub, vinyl "wobble" or reel to reel effects
+        if (!aio->eeFXActive)
+            aio->eeFXActive = true;
 
-    // setup compound scrollers
-    bool filled = false;
-    bool changed = false;
-    for (int line = 0; line < A1LINE_NUM; line++) {
-        filled = false;
-        int myline = line + 5;
-        for (tagtypes_t *t = a1layout[line]; *t != MAXTAG_TYPES; t++) {
-            if (tags[*t].valid) {
-                filled = true;
-                if (tags[*t].changed) {
-                    changed = true;
-                    if (0 == line)
-                        strncpy(aio->title, tags[*t].tagData, 254);
-                    else
-                        strncpy(aio->artist, tags[*t].tagData, 254);
+        // setup compound scrollers
+        bool filled = false;
+        bool changed = false;
+        for (int line = 0; line < A1LINE_NUM; line++) {
+            filled = false;
+            int myline = line + 5;
+            for (tagtypes_t *t = a1layout[line]; *t != MAXTAG_TYPES; t++) {
+                if (tags[*t].valid) {
+                    filled = true;
+                    if (tags[*t].changed) {
+                        changed = true;
+                        if (0 == line)
+                            strncpy(aio->title, tags[*t].tagData, 254);
+                        else
+                            strncpy(aio->artist, tags[*t].tagData, 254);
+                    }
                 }
             }
         }
-    }
 
-    if (changed) {
-        sprintf(buff, "%s - %s", aio->artist, aio->title);
-        if ((strcmp(buff, aio->compound) != 0) ||
-            (0 == strlen(aio->compound))) // safe
-        {
-            strncpy(aio->compound, buff, 254);
-            putTinyTextMaxWidthP(
-                20, 12, 92,
-                aio->title); // workable - tweak for proportional
-            putTinyTextMaxWidthP(20, 18, 92, aio->artist);
-            ///setSleepTime(SLEEP_TIME_SAVER);
+        if (changed) {
+            sprintf(buff, "%s - %s", aio->artist, aio->title);
+            if ((strcmp(buff, aio->compound) != 0) ||
+                (0 == strlen(aio->compound))) // safe
+            {
+                strncpy(aio->compound, buff, 254);
+                putTinyTextMaxWidthP(
+                    20, 12, 92,
+                    aio->title); // workable - tweak for proportional
+                putTinyTextMaxWidthP(20, 18, 92, aio->artist);
+                ///setSleepTime(SLEEP_TIME_SAVER);
+            }
         }
+
+        uint16_t pTime, dTime;
+        int xpos = 54;
+        int ypos = 24;
+        int barmax = 15;
+        drawRectangle(xpos, ypos, 21, 7, WHITE);
+        drawRectangle(xpos, ypos, 21, 7, BLACK);
+        pTime = (tags[TIME].valid) ? strtol(tags[TIME].tagData, NULL, 10) : 0;
+        dTime = (tags[DURATION].valid)
+                    ? strtol(tags[DURATION].tagData, NULL, 10)
+                    : 0;
+        // we want to emulate the tape moving from hub to hub as a track plays
+        // wndow 19 wide, lHub starts at 15 wide, rHub starts at 0 wide
+        // as the track progresses lHub shrinks, rHub expands
+        // time and duration give us the percent complete -> transpose to emulate
+        double pct = (pTime * 100.00) / (dTime == 0 ? 1 : dTime);
+
+        if (0 == strcmp("1", tags[REMOTE].tagData)) {
+            time_t now = time(NULL);
+            struct tm t = *localtime(&now);
+            pct = ((t.tm_sec % 2) ? 54 : 55); // you want some candy ...
+        }
+
+        // lHub
+        drawHorizontalCheckerBar(xpos, ypos, barmax, 7, 100 - (int)pct);
+        // rHub
+        barmax = (int)(15 * (pct / 100.00));
+        xpos += (20 -
+                 barmax); // +right max and shift for 100% (right justified bar)
+        drawHorizontalCheckerBar(xpos, ypos, barmax, 7, 100);
+
+        audio_t audioDetail = {.samplerate = 44.1,
+                               .samplesize = 16,
+                               .audioIcon = 1}; // 2 HD 3 SD 4 DSD
+
+        sampleDetails(&audioDetail);
+        audioDetail.audioIcon = 1;
+        if (1 == audioDetail.samplesize)
+            audioDetail.audioIcon++;
+        else if (16 != audioDetail.samplesize)
+            audioDetail.audioIcon--;
+
+        // type 1, 2 or 4 @ 100,29
+        compactCassette();
+        putTapeType(audioDetail);
+
+        if ((pct > 99.6) && (aio->eeFXActive))
+            aio->eeFXActive = false;
     }
-
-    uint16_t pTime, dTime;
-    int xpos = 54;
-    int ypos = 24;
-    int barmax = 15;
-    drawRectangle(xpos, ypos, 21, 7, WHITE);
-    drawRectangle(xpos, ypos, 21, 7, BLACK);
-    pTime = (tags[TIME].valid) ? strtol(tags[TIME].tagData, NULL, 10) : 0;
-    dTime =
-        (tags[DURATION].valid) ? strtol(tags[DURATION].tagData, NULL, 10) : 0;
-    // we want to emulate the tape moving from hub to hub as a track plays
-    // wndow 19 wide, lHub starts at 15 wide, rHub starts at 0 wide
-    // as the track progresses lHub shrinks, rHub expands
-    // time and duration give us the percent complete -> transpose to emulate
-    double pct = (pTime * 100.00) / (dTime == 0 ? 1 : dTime);
-
-    if (0 == strcmp("1", tags[REMOTE].tagData)) {
-        time_t now = time(NULL);
-        struct tm t = *localtime(&now);
-        pct = ((t.tm_sec % 2) ? 54 : 55); // you want some candy ...
-    }
-
-    // lHub
-    drawHorizontalCheckerBar(xpos, ypos, barmax, 7, 100 - (int)pct);
-    // rHub
-    barmax = (int)(15 * (pct / 100.00));
-    xpos +=
-        (20 - barmax); // +right max and shift for 100% (right justified bar)
-    drawHorizontalCheckerBar(xpos, ypos, barmax, 7, 100);
-
-    audio_t audioDetail = {.samplerate = 44.1,
-                           .samplesize = 16,
-                           .audioIcon = 1}; // 2 HD 3 SD 4 DSD
-
-    sampleDetails(&audioDetail);
-    audioDetail.audioIcon = 1;
-    if (1 == audioDetail.samplesize)
-        audioDetail.audioIcon++;
-    else if (16 != audioDetail.samplesize)
-        audioDetail.audioIcon--;
-
-    // type 1, 2 or 4 @ 100,29
-    compactCassette();
-    putTapeType(audioDetail);
-
-    if ((pct > 99.6) && (aio->eeFXActive))
-        aio->eeFXActive = false;
 }
 
 void allInOnePage(A1Attributes *aio) {
@@ -1680,87 +1659,92 @@ void allInOnePage(A1Attributes *aio) {
     sampleDetails(&audioDetail);
     softClockReset(false);
 
-    // check softly -> paint a rectangle to cover visualization
+    if (ZERO_BRIGHTNESS != glopt->currbright) {
 
-    if (audioDetail.volume != glopt->lastVolume) {
-        putVolume((0 != audioDetail.volume), audioDetail.volstr);
-        setLastVolume(audioDetail.volume);
-    }
+        // check softly -> paint a rectangle to cover visualization
 
-    audioDetail.audioIcon = 3;
-    if (1 == audioDetail.samplesize) {
-        sprintf(buff, "DSD%.0f", (audioDetail.samplerate / 44.1));
-        audioDetail.audioIcon++;
-    } else {
-        sprintf(buff, "%db/%.1f", audioDetail.samplesize,
-                audioDetail.samplerate);
-        if (16 != audioDetail.samplesize)
-            audioDetail.audioIcon--;
-    }
+        if (audioDetail.volume != glopt->lastVolume) {
+            putVolume((0 != audioDetail.volume), audioDetail.volstr);
+            setLastVolume(audioDetail.volume);
+        }
 
-    strcpy(buff, " "); // this we'll ignore
-    int8_t lastModes[2] = {audioDetail.shuffle, audioDetail.repeat};
-    if ((strcmp(glopt->lastBits, buff) != 0) ||
-        (glopt->lastModes[SHUFFLE_BUCKET] != lastModes[SHUFFLE_BUCKET]) ||
-        (glopt->lastModes[REPEAT_BUCKET] != lastModes[REPEAT_BUCKET])) {
-        putAudio(audioDetail, buff, false);
-        setLastBits(buff);
-        setLastModes(lastModes);
-    }
+        audioDetail.audioIcon = 3;
+        if (1 == audioDetail.samplesize) {
+            sprintf(buff, "DSD%.0f", (audioDetail.samplerate / 44.1));
+            audioDetail.audioIcon++;
+        } else {
+            sprintf(buff, "%db/%.1f", audioDetail.samplesize,
+                    audioDetail.samplerate);
+            if (16 != audioDetail.samplesize)
+                audioDetail.audioIcon--;
+        }
 
-    // setup compound scrollers
-    bool filled = false;
-    bool changed = false;
-    for (int line = 0; line < A1LINE_NUM; line++) {
-        filled = false;
-        int myline = line + 5;
-        for (tagtypes_t *t = a1layout[line]; *t != MAXTAG_TYPES; t++) {
-            if (tags[*t].valid) {
-                filled = true;
-                if (tags[*t].changed) {
-                    changed = true;
-                    if (0 == line)
-                        strncpy(aio->title, tags[*t].tagData, 254);
-                    else
-                        strncpy(aio->artist, tags[*t].tagData, 254);
+        strcpy(buff, " "); // this we'll ignore
+        int8_t lastModes[2] = {audioDetail.shuffle, audioDetail.repeat};
+        if ((strcmp(glopt->lastBits, buff) != 0) ||
+            (glopt->lastModes[SHUFFLE_BUCKET] != lastModes[SHUFFLE_BUCKET]) ||
+            (glopt->lastModes[REPEAT_BUCKET] != lastModes[REPEAT_BUCKET])) {
+            putAudio(audioDetail, buff, false);
+            setLastBits(buff);
+            setLastModes(lastModes);
+        }
+
+        // setup compound scrollers
+        bool filled = false;
+        bool changed = false;
+        for (int line = 0; line < A1LINE_NUM; line++) {
+            filled = false;
+            int myline = line + 5;
+            for (tagtypes_t *t = a1layout[line]; *t != MAXTAG_TYPES; t++) {
+                if (tags[*t].valid) {
+                    filled = true;
+                    if (tags[*t].changed) {
+                        changed = true;
+                        if (0 == line)
+                            strncpy(aio->title, tags[*t].tagData, 254);
+                        else
+                            strncpy(aio->artist, tags[*t].tagData, 254);
+                    }
                 }
             }
         }
-    }
-    if (changed) {
-        sprintf(buff, "%s - %s", aio->artist, aio->title);
-        if ((strcmp(buff, aio->compound) != 0) ||
-            (0 == strlen(aio->compound)) ||
-            (!isScrollerActive(A1SCROLLER))) // safe
-        {
-            strncpy(aio->compound, buff, 254);
-            setScrollPosition(A1SCROLLER, A1SCROLLPOS);
-            if (putScrollable(A1SCROLLER, aio->compound)) {
-                setSleepTime(SLEEP_TIME_SHORT);
+        if (changed) {
+            sprintf(buff, "%s - %s", aio->artist, aio->title);
+            if ((strcmp(buff, aio->compound) != 0) ||
+                (0 == strlen(aio->compound)) ||
+                (!isScrollerActive(A1SCROLLER))) // safe
+            {
+                strncpy(aio->compound, buff, 254);
+                setScrollPosition(A1SCROLLER, A1SCROLLPOS);
+                if (putScrollable(A1SCROLLER, aio->compound)) {
+                    setSleepTime(SLEEP_TIME_SHORT);
+                }
             }
         }
-    }
 
-    // display time
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    time_t now = tv.tv_sec;
-    struct tm loctm = *localtime(&now);
+        // display time
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        time_t now = tv.tv_sec;
+        struct tm loctm = *localtime(&now);
 
-    // time
-    sprintf(buff, "%02d:%02d", loctm.tm_hour, loctm.tm_min);
-    if (strcmp(glopt->lastTime, buff) != 0)
-        setLastTime(buff, dt);
-    // colon (blink)
-    drawTimeBlink(((loctm.tm_sec % 2) ? ' ' : ':'), &dt);
+        // time
+        sprintf(buff, "%02d:%02d", loctm.tm_hour, loctm.tm_min);
+        if (strcmp(glopt->lastTime, buff) != 0)
+            setLastTime(buff, dt);
+        // colon (blink)
+        drawTimeBlink(((loctm.tm_sec % 2) ? ' ' : ':'), &dt);
 
-    uint16_t rTime =
-        (tags[REMAINING].valid) ? strtol(tags[REMAINING].tagData, NULL, 10) : 0;
+        uint16_t rTime = (tags[REMAINING].valid)
+                             ? strtol(tags[REMAINING].tagData, NULL, 10)
+                             : 0;
 
-    // not hourly compliant!
-    sprintf(buff, "%02d:%02d", rTime / 60, rTime % 60);
-    setLastRemainingTime(buff, rdt);
-    if (rTime < 2) // fingers crossed - won't catch a hard stop
+        // not hourly compliant!
+        sprintf(buff, "%02d:%02d", rTime / 60, rTime % 60);
+        setLastRemainingTime(buff, rdt);
+        if (rTime < 2) // fingers crossed - won't catch a hard stop
+            softClockReset(false);
+    } else
         softClockReset(false);
 }
 
@@ -1812,14 +1796,10 @@ void updStatusPage(void) {
     setSleepTime(SLEEP_TIME_SHORT);
 }
 
-#endif
-
 void playingPage(void) {
 
     uint16_t pTime, dTime, rTime;
     char buff[BSIZE] = {0};
-
-#ifdef __arm__
 
     audio_t audioDetail = {.samplerate = 44.1,
                            .samplesize = 16,
@@ -1854,11 +1834,6 @@ void playingPage(void) {
         setSleepTime(SLEEP_TIME_SHORT);
 
     } else {
-#endif
-        sprintf(buff, "________________________\n");
-        tOut(buff);
-
-#ifdef __arm__
 
         setNagDone(false); // do not set refreshLMS
         softClockReset(false);
@@ -1897,43 +1872,31 @@ void playingPage(void) {
             setLastModes(lastModes);
         }
 
-#endif
-
         for (int line = 1; line < LINE_NUM; line++) {
-#ifdef __arm__
+
             bool filled = false;
-#endif
             for (tagtypes_t *t = layout[line]; *t != MAXTAG_TYPES; t++) {
 
                 if (tags[*t].valid) {
-#ifdef __arm__
                     filled = true;
-#endif
                     if (tags[*t].changed) {
                         strncpy(buff, tags[*t].tagData, 254);
-#ifdef __arm__
                         if (putScrollable(line, buff)) {
                             setSleepTime(SLEEP_TIME_SHORT);
                         }
-#endif
                     }
                     sprintf(stbl, "%s\n", tags[*t].tagData);
                     tOut(stbl);
                     break;
                 }
             }
-#ifdef __arm__
             if (!filled) {
                 clearScrollable(line);
                 clearLine(line * 10);
             }
-#endif
         }
 
-#ifdef __arm__
         setSleepTime(SLEEP_TIME_SHORT);
-#endif
-
         pTime = (tags[TIME].valid) ? strtol(tags[TIME].tagData, NULL, 10) : 0;
         dTime = (tags[DURATION].valid)
                     ? strtol(tags[DURATION].tagData, NULL, 10)
@@ -1941,8 +1904,6 @@ void playingPage(void) {
         rTime = (tags[REMAINING].valid)
                     ? strtol(tags[REMAINING].tagData, NULL, 10)
                     : 0;
-
-#ifdef __arm__
 
         if (pTime > 3600)
             sprintf(buff, "%02d:%02d:%02d", pTime / 3600, pTime / 60,
@@ -1979,23 +1940,16 @@ void playingPage(void) {
 
         drawHorizontalBargraph(2, 51, maxXPixel() - 4, 4, pct);
 
-#endif
-
         sprintf(buff, "%3d:%02d  %5s  %3d:%02d", pTime / 60, pTime % 60,
                 (tags[MODE].valid) ? tags[MODE].tagData : "", dTime / 60,
                 dTime % 60);
         sprintf(stbl, "%s\n\n", buff);
         tOut(stbl);
-
-#ifdef __arm__
     }
-#endif
 
     for (int i = 0; i < MAXTAG_TYPES; i++) {
         tags[i].changed = false;
     }
 
-#ifdef __arm__
     refreshDisplay();
-#endif
 }

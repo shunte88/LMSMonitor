@@ -115,6 +115,8 @@ typedef struct MonitorAttrs {
     char pauseMessage[128];
     bool powered;
     bool checkPower;
+    uint8_t lastbright;
+    uint8_t currbright;
     pthread_mutex_t update;
 } MonitorAttrs;
 

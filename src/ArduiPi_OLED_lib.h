@@ -22,7 +22,9 @@
 #define _ArduiPi_OLED_lib_H
 
 #include "bcm2835.h"
+#ifdef __arm__
 #include <cstddef>
+#endif
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>

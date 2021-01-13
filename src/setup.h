@@ -34,14 +34,12 @@
 
 // clang-format off
 // retain this include order
-#ifdef __arm__
 #include "ArduiPi_OLED_lib.h"
 #include "Adafruit_GFX.h"
 #include "ArduiPi_OLED.h"
 #include "display.h"
 #include "visualize.h"
 #include "oledimg.h"
-#endif
 // retain this include order
 // clang-format on
 
@@ -128,7 +126,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
         case 's': setVerbose(LL_QUIET); break;
         case 'V': setVerbose(LL_VERBOSE); break;
         case 'n': arguments->lmsopt->playerName = arg; break;
-#ifdef __arm__
         case 'o':
             if (arg) {
                 sscanf(arg, "%d", &test);
@@ -362,8 +359,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 arguments->lmsopt->locale.Longitude = lon;
             }
             break;
-#endif
-
         case ARGP_KEY_END:
             if (!arguments->lmsopt->playerName) {
                 sprintf(err, "you MUST specify a player name\ne.g.\n--name "
@@ -378,21 +373,5 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 }
 
 static struct argp argp = {options, parse_opt, args_doc, doc};
-
-/*
-static void argp_help(const struct argp_state *__restrict __state,
-			       FILE *__restrict __stream,
-			       unsigned int __flags) {
-    argp_help(&argp, stderr, ARGP_HELP_STD_HELP, (char *)APPNAME);
-#ifdef __arm__
-    printOledTypes();
-    printOledFontTypes();
-#endif
-}
-
-static void print_help(void) {
-    argp_help(&argp, stderr, ARGP_HELP_STD_HELP, (char *)APPNAME);
-}
-*/
 
 #endif

@@ -39,9 +39,10 @@
 #include "eggs.h"
 #include "visdata.h"
 
-#define MAX_LINES 8
+#define MAX_LINES 8 // effects of higher/lower screen resolution
 
 #define MAXSCROLL_DATA 255
+#define ZERO_BRIGHTNESS 0
 #define MAX_BRIGHTNESS 200
 #define NIGHT_BRIGHTNESS                                                       \
     88 // need to track down bit leak causing screen to flip/misalign
@@ -149,7 +150,7 @@ double rad2Deg(double angRad);
 void hazardSign(void);
 void splashScreen(void);
 
-void displayBrightness(int bright, bool flip);
+void setDisplayBrightness(int bright, bool flip);
 
 void putWeatherTemp(int x, int y, ccdata_t *cc);
 void putWeatherIcon(int x, int y, ccdata_t *cc);

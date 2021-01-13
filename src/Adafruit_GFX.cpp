@@ -36,7 +36,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "./ArduiPi_OLED_lib.h"
 #include "Adafruit_GFX.h"
 #include "glcdfont.c"
+#ifdef __arm__
 #include <cstddef>
+#endif
 
 #ifdef __AVR__
 #include <avr/pgmspace.h>

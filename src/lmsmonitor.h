@@ -23,8 +23,8 @@
 #ifndef LMSMON_H
 #define LMSMON_H
 
-#include <stdint.h>
 #include "lmsopts.h"
+#include <stdint.h>
 
 #define SLEEP_TIME_SAVER 20
 #define SLEEP_TIME_SHORT 80
@@ -35,6 +35,7 @@
 
 bool lockOptions(void);
 bool acquireOptLock(void);
+void displayBrightness(uint8_t bright, bool flip);
 
 typedef struct A1Attributes {
     enum eggYuks eeMode;

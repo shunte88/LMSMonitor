@@ -38,8 +38,6 @@
 #define PI acos(-1.0000)
 #define DOWNMIX 0
 
-#ifdef __arm__
-
 // clang-format off
 // retain this include order
 #include "oledimg.h"
@@ -79,20 +77,10 @@ int maxTTLine(void) { return (int)(maxYPixel() / _tt_char_height); }
 uint16_t charTTWidth(void) { return _tt_char_width; }
 uint16_t charTTHeight(void) { return _tt_char_height; }
 
-#else
-int maxCharacter(void) { return 21; }
-int maxLine(void) { return MAX_LINES; }
-uint16_t charWidth(void) { return 6; }
-uint16_t charHeight(void) { return 8; }
-
-#endif
-
 int maxXPixel(void) { return 128; }
 int maxYPixel(void) { return 64; }
 double deg2Rad(double angDeg) { return (PI * angDeg / 180.0); }
 double rad2Deg(double angRad) { return (180.0 * angRad / PI); }
-
-#ifdef __arm__
 
 int elementLength(int szh, int szw) { return szh * (int)((szw + 7) / 8); }
 
@@ -236,7 +224,7 @@ void flipDisplay() {
     }
 }
 
-void displayBrightness(int bright, bool flip) {
+void setDisplayBrightness(int bright, bool flip) {
     display.setBrightness(bright);
     if ((flip) && (isFlipped)) {
         flipDisplay();
@@ -2338,5 +2326,3 @@ void setScrollPosition(int line, int ypos) {
         pthread_mutex_unlock(&scroll[line].scrollox);
     }
 }
-
-#endif

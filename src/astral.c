@@ -1,5 +1,7 @@
 /*
- *	(c) 2020 Stuart Hunter
+ *  astral.c
+ * 
+ *	(c) 2020-21 Stuart Hunter
  *
  *  Capture ISP IP, we assume its close (enough)
  *  Use the IP to derive lat/long
@@ -43,9 +45,9 @@
 
 #include "astral.h"
 #include "basehttp.h"
-#include "climacell.h"
 #include "common.h"
 #include "display.h"
+#include "lmsmonitor.h"
 
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
@@ -76,11 +78,11 @@ void initTimezone(void) {
 
 void paddem(char *s) {
 
-    const int ll = strlen(s)*3;
-    char* s2 = NULL;
-    s2 = (char*) malloc(ll);
+    const int ll = strlen(s) * 3;
+    char *s2 = NULL;
+    s2 = (char *)malloc(ll);
     s2[0] = '\0';
-    
+
     for (uint8_t i = 0; i < strlen(s); i++) {
         char z[3];
         if ('-' != s[i])
@@ -717,7 +719,7 @@ void debug_datum(ccdatum_t *d, enum ccdatum_debug mode) {
             break;
     }
     if (t)
-        free((void*)t);
+        free((void *)t);
 }
 
 // quick and dirty weather impl.
@@ -797,7 +799,7 @@ bool parseClimacell(char *jsonData, climacell_t *climacell,
                     printf(climacell->lat.fmt, labelIt(t, LABEL_WIDTH, "."),
                            climacell->coords.Latitude);
                     if (t)
-                        free((void*)t);
+                        free((void *)t);
                 }
                 done--;
                 i++;
@@ -811,7 +813,7 @@ bool parseClimacell(char *jsonData, climacell_t *climacell,
                     printf(climacell->lon.fmt, labelIt(t, LABEL_WIDTH, "."),
                            climacell->coords.Longitude);
                     if (t)
-                        free((void*)t);
+                        free((void *)t);
                 }
                 done--;
                 i++;
@@ -1096,7 +1098,7 @@ bool parseClimacell(char *jsonData, climacell_t *climacell,
                             printf(d->fmt, labelIt(t, LABEL_WIDTH, "."),
                                    d->sdatum, data->icon.text, data->icon.icon);
                             if (t)
-                                free((void*)t);
+                                free((void *)t);
                         }
                     }
                     done--;

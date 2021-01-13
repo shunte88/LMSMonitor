@@ -28,7 +28,6 @@
 
 #include "common.h"
 
-#ifdef __arm__
 #include "ArduiPi_OLED.h"
 #include "display.h"
 #include "eggs.h"
@@ -1703,5 +1702,3 @@ void animatePong(pongem_t *p) {
     putPixel(p->court.pos.x, p->court.pos.y + p->court.h, WHITE);
     putPixel(p->court.pos.x + p->court.w, p->court.pos.y + p->court.h, WHITE);
 }
-
-#endif

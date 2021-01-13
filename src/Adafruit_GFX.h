@@ -4,7 +4,9 @@
 /* Includes changes made for mpd_oled */
 
 #include "gfxfont.h"
+#ifdef __arm__
 #include <cstddef>
+#endif
 #include <inttypes.h>
 
 class Adafruit_GFX {
