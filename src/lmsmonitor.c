@@ -750,6 +750,8 @@ int main(int argc, char *argv[]) {
         .pauseMessage = {0},
         .powered = true,
         .checkPower = false,
+        .lastbright = MAX_BRIGHTNESS,
+        .currbright = MAX_BRIGHTNESS,
     };
 
     if (pthread_mutex_init(&lmsopt.update, NULL) != 0) {
@@ -1072,9 +1074,6 @@ int main(int argc, char *argv[]) {
                         if (aio.eeFXActive)
                             aio.eeFXActive = false;
                         aio.compound[0] = {0};
-                        /***
-                        if (screenPowered(playerPowered())) {
-                            ***/
                         if (weather.active) {
                             clockWeatherPage(&weather);
                         } else {

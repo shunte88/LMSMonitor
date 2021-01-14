@@ -64,7 +64,15 @@ const char *whatsitJson(int typ) {
 }
 
 bool storeTagData(tag_t *st, char *value) {
-    // need to dealwith escaped quotes here
+#define ESCAPE_DOUBLE "\""
+#define ESCESC_DOUBLE "\\\""
+    if (strstr(value, ESCAPE_DOUBLE)) {
+        char interm[MAXTAG_DATA] = {0};
+        strcpy(interm, strreplace(value, (char *)ESCESC_DOUBLE, (char *)""));
+        strcpy(value, interm);
+        //strcpy(interm, strreplace(value, (char *)ESCAPE_DOUBLE, (char *)""));
+        //strcpy(value, interm);
+    }
     if (0 != strcicmp(st->tagData, value)) {
         strcpy(st->tagData, value);
         st->changed = true;
@@ -97,7 +105,7 @@ bool parseLMSResponse(char *jsonData) {
         }
         return false;
     }
-
+    bool composer = false;
     if (r < 1 || jt[0].type != JSMN_OBJECT) {
         printf("Object expected, %d %s?\n", r, whatsitJson(jt[0].type));
         if (v > LL_DEBUG) {
@@ -225,9 +233,11 @@ bool parseLMSResponse(char *jsonData) {
                         printf("LMS:Duration ........: %s\n", valStr);
             } else if (0 == strncmp(lmsTags[COMPOSER].name, keyStr,
                                     lmsTags[COMPOSER].keyLen)) {
-                if (storeTagData(&lmsTags[COMPOSER], valStr))
+                if (storeTagData(&lmsTags[COMPOSER], valStr)) {
+                    composer = true;
                     if (v > LL_DEBUG)
                         printf("LMS:Composer ........: %s\n", valStr);
+                }
             } else if (0 == strncmp(lmsTags[CONDUCTOR].name, keyStr,
                                     lmsTags[CONDUCTOR].keyLen)) {
                 if (storeTagData(&lmsTags[CONDUCTOR], valStr))
@@ -263,7 +273,9 @@ bool parseLMSResponse(char *jsonData) {
             }
         }
     }
-
+    // fix data bleeds
+    if (!composer)
+        storeTagData(&lmsTags[COMPOSER], "");
     return true;
 }
 

@@ -30,7 +30,7 @@
 #define BSIZE8 BUFSIZ
 
 #define APPNAME "LMSMonitor"
-#define VERSION "0.4.68"
+#define VERSION "0.4.70"
 #define APPSIG APPNAME " " VERSION
 
 #define LABEL_WIDTH 22
@@ -85,5 +85,7 @@ int alreadyRunning(void);
 void addDays(struct tm *date, int days);
 
 const char *strzip(const char *s1, const char *s2, const char *sep);
+
+char *strreplace(char *orig, char *rep, char *with);
 
 #endif
