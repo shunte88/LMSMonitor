@@ -1,13 +1,13 @@
 /*
  *  astral.c
- * 
+ *
  *	(c) 2020-21 Stuart Hunter
  *
  *  Capture ISP IP, we assume its close (enough)
  *  Use the IP to derive lat/long
  *  Use lat/lng and local time to calculate sunrise and sunset
  *  Set display brightness based on time of day and sunlight
- * 
+ *
  *	TODO:
  *
  *	This program is free software: you can redistribute it and/or modify

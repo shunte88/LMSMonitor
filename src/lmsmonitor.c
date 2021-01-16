@@ -956,12 +956,10 @@ int main(int argc, char *argv[]) {
             activateVisualizer(); // fixed all-in-one (when playing)
         }
 
-        printf("%s\n", barStyleInfo[lmsopt.barstyle]);
-        instrument(__LINE__, __FILE__, "<- Bar Style>");
         setBarStyle(lmsopt.barstyle);
         sprintf(stbl, "%s %s\n", labelIt("Bar Style", LABEL_WIDTH, "."),
                 barStyleInfo[lmsopt.barstyle]);
-        instrument(__LINE__, __FILE__, "-> Bar Style>");
+        putMSG(stbl, LL_INFO);
 
         if (!(lmsopt.allInOne)) {
             instrument(__LINE__, __FILE__, "activate visualization cycling");
