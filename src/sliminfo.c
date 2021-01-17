@@ -1,8 +1,8 @@
 /*
  *	sliminfo.c
  *
- *	(c) 2020-21 Stuart Hunter
- *	(c) 2015 László TÓTH
+ *	(c) 2020-21 Stuart Hunter (100% rewrite - JSON ingest)
+ *	(c) 2015 László TÓTH (taglib, original socket impl.)
  *
  *	This program is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
