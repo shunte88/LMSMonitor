@@ -1,5 +1,7 @@
 /*
- *	(c) 2020 Stuart Hunter
+ *      visdata.h
+ *
+ *	(c) 2020-21 Stuart Hunter
  *
  *	TODO:
  *

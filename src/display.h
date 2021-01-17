@@ -1,6 +1,8 @@
 /*
+ *      display.h
+ *
+ *	(c) 2020-21 Stuart Hunter
  *	(c) 2015 László TÓTH
- *	(c) 2020 Stuart Hunter
  *
  *	TODO:
  *

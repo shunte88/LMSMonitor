@@ -1,8 +1,10 @@
 /*
- *	(c) 2020 Stuart Hunter
+ *      basehttp.h
  *
- *  Set display brightness based on time of day and sunlight
- * 
+ *	(c) 2020-21 Stuart Hunter
+ *
+ *      HTTP request processing
+ *
  *	TODO:
  *
  *	This program is free software: you can redistribute it and/or modify

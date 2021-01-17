@@ -1,12 +1,14 @@
 /*
- *	(c) 2020 Stuart Hunter
+ *      climacell.h
+ *
+ *	(c) 2020-21 Stuart Hunter
  *
  *  Weather data provided by climacell
  *  api key and units passed as CLI attributes
  *  lat/lng is derived via an ISP lookup - same as the astral data
  *  those routines are colocated given JSON primitives are utilized
  *  by both interfaces.
- * 
+ *
  *	TODO:
  *
  *	This program is free software: you can redistribute it and/or modify

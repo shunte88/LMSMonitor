@@ -1,7 +1,7 @@
 /*
  *	pivers.c
  *
- *	(c) 2020 Stuart Hunter
+ *	(c) 2020-21 Stuart Hunter
  *
  *	This program is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by

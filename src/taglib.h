@@ -1,7 +1,9 @@
 /*
- *	(c) 2020 Stuart Hunter
+ *      taglib.h
  *
- *	Todo:
+ *	(c) 2020-21 Stuart Hunter
+ *
+ *	TODO:
  *
  *	This program is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by

@@ -1,7 +1,7 @@
 /*
- *  fauxfont.h
+ *      fauxfont.h
  *
- *	(c) 2020 Stuart Hunter
+ *	(c) 2020-21 Stuart Hunter
  *
  *	TODO:
  *
