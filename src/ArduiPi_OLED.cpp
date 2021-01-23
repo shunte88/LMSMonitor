@@ -686,6 +686,18 @@ void ArduiPi_OLED::setSeedTextXY(unsigned char Row, unsigned char Column) {
     sendCommand(0x07 + (Row * 8)); /* End Row*/
 }
 
+void ArduiPi_OLED::displayOn(void) {
+    sendCommand(SSD1306_CHARGEPUMP);
+    sendCommand(0x14);
+    sendCommand(SSD_Display_On);
+}
+
+void ArduiPi_OLED::displayOff(void) {
+    sendCommand(SSD1306_CHARGEPUMP);
+    sendCommand(0x10);
+    sendCommand(SSD_Display_Off);
+}
+
 void ArduiPi_OLED::putSeedChar(char C) {
     if (C < 32 ||
         C > 127) //Ignore non-printable ASCII characters. This can be modified for multilingual font.

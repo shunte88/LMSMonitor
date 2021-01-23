@@ -1212,7 +1212,7 @@ char *httpsFetch(char host[], int port, char uri[], char *body) {
     int size = 0;
     char *resp = (char *)malloc(4096);
     size_t body_len = 0;
-
+    bool realloc_good = true;
     do {
 
         size = BIO_read(bio, resp + body_len, 4095);
@@ -1223,45 +1223,57 @@ char *httpsFetch(char host[], int port, char uri[], char *body) {
                 // realloc will bletch if it cannot acquire contiguous memory or another thread
                 // has invalidated the heap.  we hit the issue at least once a week TODO - resolve
                 resp = realloc(resp, strlen(resp) + (body_len + 1));
+                if (!resp) {
+                    realloc_good = false;
+                    break;
+                };
             }
         }
 
     } while (size > 0);
 
-    //printf("total ............: %ld\n", body_len);
-    //printf("tested total .....: %ld\n", strlen(resp));
-    //printf("\n\n%s\n\n", resp);
+    if (NULL != resp) {
 
-    if (strstr(resp, "HTTP/1.1 200 OK") == NULL) {
-        printf("\nerror?\n%s\n", resp);
+        //printf("total ............: %ld\n", body_len);
+        //printf("tested total .....: %ld\n", strlen(resp));
+        //printf("\n\n%s\n\n", resp);
+
+        if (strstr(resp, "HTTP/1.1 200 OK") == NULL) {
+            printf("\nerror?\n%s\n", resp);
+            if (bio)
+                BIO_free_all(bio);
+            if (ctx)
+                SSL_CTX_free(ctx);
+            return NULL;
+        }
         if (bio)
             BIO_free_all(bio);
         if (ctx)
             SSL_CTX_free(ctx);
-        return NULL;
-    }
-    if (bio)
-        BIO_free_all(bio);
-    if (ctx)
-        SSL_CTX_free(ctx);
 
-    resp[body_len] = 0;
-    resp = strstr(resp, "200 OK") + 8;
-    resp = strstr(resp, "\r\n\r\n");
-    if (resp != NULL) {
-        resp += 4;
-        body_len = strlen(resp);
-        //printf("body:%ld\n", body_len);
-        body = (char *)malloc(sizeof(char) * body_len + 1);
-        memcpy(body, resp, body_len);
-        body[body_len] = 0;
+        resp[body_len] = 0;
+        resp = strstr(resp, "200 OK") + 8;
+        resp = strstr(resp, "\r\n\r\n");
+        if (NULL != resp) {
+            resp += 4;
+            body_len = strlen(resp);
+            //printf("body:%ld\n", body_len);
+            body = (char *)malloc(sizeof(char) * body_len + 1);
+            memcpy(body, resp, body_len);
+            body[body_len] = 0;
+        } else {
+            if (resp)
+                free(resp);
+            return NULL;
+        }
+
+        return body;
+
     } else {
-        if (resp)
+        if (NULL != resp)
             free(resp);
         return NULL;
     }
-
-    return body;
 }
 
 bool updClimacell(climacell_t *climacell) {

@@ -24,7 +24,7 @@ CFLAGS3 = -g -Wall -std=c11 -Ofast -lrt -fPIC -fno-rtti  -Wno-unused-variable \
 
 CFLAGS3 = -g -Wall -std=c11 -Ofast -fPIC -fno-rtti  -Wno-unused-variable \
 -Wno-unused-parameter -Wstringop-truncation -mfpu=vfp -mfloat-abi=hard \
--fpermissive -Wunused-function -Wstringop-truncation -Wunused-but-set-variable -Wstringop-overflow \
+-fpermissive -Wunused-function -Wno-stringop-truncation -Wunused-but-set-variable -Wstringop-overflow \
 -funsafe-math-optimizations -ffast-math -pipe -I. -I./src
 
 CAPTURE_BMP = -DCAPTURE_BMP -I./src -I./capture

@@ -259,8 +259,10 @@ bool baseHTTPRequest(enum Method method, char *host, uint16_t port, char *uri,
             printf("%ld > %ld?\n", (long)read_size, (long)seed);
             redone = true;
             ret = (char *)realloc(ret, read_size + total_size);
-            if (response == NULL) {
+            if (ret == NULL) {
                 printf("[baseHTTPRequest] error: realloc failed\n");
+                redone = false;
+                break;
             }
             seed = 0;
         }
@@ -273,31 +275,39 @@ bool baseHTTPRequest(enum Method method, char *host, uint16_t port, char *uri,
     if (redone) {
         ret = (char *)realloc(ret, total_size + 1);
     }
-    *(ret + total_size) = '\0';
+    if (ret != NULL)
+        *(ret + total_size) = '\0';
 
     close(sockFD);
 
-    ret = strstr(ret, "200 OK");
-    if (ret == NULL) {
-        response[0] = '\0';
-        if (ret)
-            free(ret);
-        return false;
-    } else {
-        ret += 7;
-    }
-    // should slurp content length here
-    ret = strstr(ret, "\r\n\r\n");
     if (ret != NULL) {
-        ret += 4;
-        strcpy(response, ret);
+
+        ret = strstr(ret, "200 OK");
+        if (ret == NULL) {
+            response[0] = '\0';
+            if (ret)
+                free(ret);
+            return false;
+        } else {
+            ret += 7;
+        }
+        // should slurp content length here
+        ret = strstr(ret, "\r\n\r\n");
+        if (ret != NULL) {
+            ret += 4;
+            strcpy(response, ret);
+        } else {
+            if (ret)
+                free(ret);
+            return false;
+        }
+
+        return true;
     } else {
         if (ret)
             free(ret);
         return false;
     }
-
-    return true;
 }
 
 bool baseHTTPRequestNR(enum Method method, char *host, uint16_t port, char *uri,
