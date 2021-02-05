@@ -261,6 +261,10 @@ class ArduiPi_OLED : public Adafruit_GFX {
     void sendCommand(uint8_t c0, uint8_t c1, uint8_t c2);
     void sendData(uint8_t c);
 
+    void sendCommandx(uint8_t c0);
+    void sendCommandx(uint8_t c0, uint8_t c1);
+    void sendCommandx(uint8_t c0, uint8_t c1, uint8_t c2);
+
     void clearDisplay(void);
     void setGrayLevel(uint8_t grayLevel);
     void setBrightness(uint8_t Brightness);

@@ -1210,19 +1210,33 @@ char *httpsFetch(char host[], int port, char uri[], char *body) {
         free(write_buf);
 
     int size = 0;
-    char *resp = (char *)malloc(4096);
+    char *resp = (char *)malloc(BSIZE8);
     size_t body_len = 0;
     bool realloc_good = true;
     do {
 
-        size = BIO_read(bio, resp + body_len, 4095);
+        size = BIO_read(bio, resp + body_len, BSIZE8 - 1);
         if (size > 0) {
             body_len += size;
             if (body_len + 1 > strlen(resp)) {
-                //printf("%ld > %ld -> %ld\n", body_len, strlen(resp), strlen(resp) + (body_len + 1));
+
                 // realloc will bletch if it cannot acquire contiguous memory or another thread
                 // has invalidated the heap.  we hit the issue at least once a week TODO - resolve
-                resp = realloc(resp, strlen(resp) + (body_len + 1));
+
+                instrument(__LINE__, __FILE__, ".... realloc");
+                ssize_t newsize = strlen(resp) + (body_len + 1);
+                char *p = (char *)realloc(resp, newsize);
+                if (!p) {
+                    fprintf(stderr, "[httpsFetch] realloc failed %ld bytes!\n",
+                            newsize);
+                    if (resp)
+                        free(resp);
+                    resp = NULL;
+                    realloc_good = false;
+                    break;
+                } else {
+                    resp = p;
+                }
                 if (!resp) {
                     realloc_good = false;
                     break;
@@ -1270,7 +1284,7 @@ char *httpsFetch(char host[], int port, char uri[], char *body) {
         return body;
 
     } else {
-        if (NULL != resp)
+        if (resp)
             free(resp);
         return NULL;
     }

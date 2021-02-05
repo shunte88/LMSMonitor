@@ -1,8 +1,8 @@
 /*
  *	lmsmonitor.c
  *
- *	(c) 2015 László TÓTH
  *	(c) 2020-21 Stuart Hunter
+ *	(c) 2015 László TÓTH
  *
  *	TODO:
  *          DONE - Automatic server discovery
@@ -70,6 +70,14 @@
 #include "lmsmonitor.h"
 #include "oledimg.h"
 #include "pivers.h"
+
+#ifdef DMALLOC
+#include "dmalloc.h"
+#define AUTO_SHUTDOWN 1
+#define LARGEST_ALLOCATION 0UL
+#define THREAD_INCLUDE <pthread.h>
+#define LOCK_THREADS 20	
+#endif
 // clang-format on
 
 struct MonitorAttrs *glopt;
@@ -752,6 +760,8 @@ int main(int argc, char *argv[]) {
         .checkPower = false,
         .lastbright = MAX_BRIGHTNESS,
         .currbright = MAX_BRIGHTNESS,
+        .blinkClock = true,
+        .textOnly = false,
     };
 
     if (pthread_mutex_init(&lmsopt.update, NULL) != 0) {
@@ -794,7 +804,7 @@ int main(int argc, char *argv[]) {
     }
 
     // init OLED display IIC & SPI supported
-    if (initDisplay(lmsopt) == EXIT_FAILURE) {
+    if (initDisplay(lmsopt, true) == EXIT_FAILURE) {
         exit(EXIT_FAILURE);
     }
 
@@ -1128,9 +1138,10 @@ void clockPage(void) {
     DrawTime dt = {.charWidth = 25,
                    .charHeight = 44,
                    .bufferLen = LCD25X44_LEN,
-                   .pos = {2, ((glopt->showTemp) ? -1 : 1)},
+                   .pos = {2, (int16_t)((glopt->showTemp) ? -1 : 1)},
                    .font = glopt->clockFont,
-                   .fmt12 = (MON_CLOCK_12H == glopt->clockMode)};
+                   .fmt12 = (MON_CLOCK_12H == glopt->clockMode),
+                   .blink = glopt->blinkClock};
 
     if (glopt->refreshClock) {
         instrument(__LINE__, __FILE__, "clock reset");
@@ -1333,7 +1344,8 @@ void OvaTimePage(A1Attributes *aio) {
             pct = ((t.tm_sec % 2) ? 50 : 55); // you want some candy ...
             skipper = true;
         }
-        DrawTime rdt = {.pos = {18, 13}, .font = MON_FONT_STANDARD};
+        DrawTime rdt = {
+            .pos = {18, 13}, .font = MON_FONT_STANDARD, .blink = false};
 
         switch (aio->eeMode) {
             case EE_NONE:
@@ -1412,7 +1424,7 @@ void warningsPage(void) {
     DrawTime dt = {.charWidth = 12,
                    .charHeight = 17,
                    .bufferLen = LCD12X17_LEN,
-                   .pos = {pin - (5 * 12), 36},
+                   .pos = {(int16_t)(pin - (5 * 12)), 36},
                    .font = MON_FONT_LCD1217};
 
     setLastTime(buff, dt);
@@ -1432,7 +1444,8 @@ void clockWeatherPage(climacell_t *cc) {
                    .charHeight = 17,
                    .bufferLen = LCD12X17_LEN,
                    .pos = {2, 1}, //{3, 11},
-                   .font = MON_FONT_LCD1217};
+                   .font = MON_FONT_LCD1217,
+                   .blink = glopt->blinkClock};
 
     if (glopt->refreshClock) {
         instrument(__LINE__, __FILE__, "clock reset");
@@ -1469,7 +1482,7 @@ void clockWeatherPage(climacell_t *cc) {
             }
 
             // wind it up...
-            uint pc = 57;
+            uint8_t pc = 57;
             baselineClimacell(cc, (loctm.tm_sec > pc));
             glopt->refreshClock = (loctm.tm_sec > pc);
 
@@ -1638,13 +1651,15 @@ void allInOnePage(A1Attributes *aio) {
                    .charHeight = 17,
                    .bufferLen = LCD12X17_LEN,
                    .pos = {2, 10},
-                   .font = MON_FONT_LCD1217};
+                   .font = MON_FONT_LCD1217,
+                   .blink = glopt->blinkClock};
 
     DrawTime rdt = {.charWidth = 12,
                     .charHeight = 17,
                     .bufferLen = LCD12X17_LEN,
                     .pos = {2, 28},
-                    .font = MON_FONT_LCD1217};
+                    .font = MON_FONT_LCD1217,
+                    .blink = false};
 
     audio_t audioDetail = {.samplerate = 44.1,
                            .samplesize = 16,
@@ -1864,7 +1879,7 @@ void playingPage(void) {
         if ((strcmp(glopt->lastBits, buff) != 0) ||
             (glopt->lastModes[SHUFFLE_BUCKET] != lastModes[SHUFFLE_BUCKET]) ||
             (glopt->lastModes[REPEAT_BUCKET] != lastModes[REPEAT_BUCKET])) {
-            putAudio(audioDetail, buff);
+            putAudio(audioDetail, buff, true);
             setLastBits(buff);
             setLastModes(lastModes);
         }

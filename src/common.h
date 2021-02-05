@@ -27,7 +27,7 @@
 #include <stdint.h>
 
 #define BSIZE 4096
-#define BSIZE8 BUFSIZ
+#define BSIZE8 8192
 
 #define APPNAME "LMSMonitor"
 #define VERSION "0.4.70"

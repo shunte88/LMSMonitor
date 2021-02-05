@@ -93,6 +93,10 @@ static struct argp_option options[] = {
     {"addr", 'x', "OLEDADDR", 0,
      "OLED address if default does not work - use i2cdetect to find address "
      "(pi only)"},
+    {"textonly", 'T', "TEXTONLY", OPTION_ARG_OPTIONAL,
+     "Text Only: text only mode, no visualization, weather, eggs, etc..."},
+    {"colonblink", 'L', "BLINK", OPTION_ARG_OPTIONAL,
+     "Colon Blink: clock only attribute, static or blinking colon"},
     {"remain-time", 'r', 0, 0, "Display remaining time rather than track time"},
     {"scroll", 'S', "SCROLLMODE", OPTION_ARG_OPTIONAL,
      "Label scroll mode: 0 (cylon), 1 (infinity left), 2 infinity (right)"},
@@ -184,6 +188,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 }
             }
             break;
+        case 'L':
+            arguments->lmsopt->blinkClock = (!(arg && 0 == atoi(arg)));
+            break;
 
         case 'd': arguments->lmsopt->downmix = true; break;
         case 'P':
@@ -244,6 +251,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             if (arg && 0 == atoi(arg)) {
                 arguments->lmsopt->showWarnings = false;
             }
+            break;
+        case 'T':
+            arguments->lmsopt->textOnly = (!(arg && 0 == atoi(arg)));
             break;
         case 'f':
             if (arg) {

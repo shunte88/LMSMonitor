@@ -419,6 +419,27 @@ void ArduiPi_OLED::close(void) {
     bcm2835_close();
 }
 
+void ArduiPi_OLED::sendCommandx(uint8_t c0) {
+    bcm2835_gpio_write(dc, LOW);
+    bcm2835_spi_transfer(c0);
+}
+
+void ArduiPi_OLED::sendCommandx(uint8_t c0, uint8_t c1) {
+    bcm2835_gpio_write(dc, LOW);
+    bcm2835_spi_transfer(c0);
+    bcm2835_gpio_write(dc, HIGH);
+    bcm2835_spi_transfer(c1);
+}
+
+void ArduiPi_OLED::sendCommandx(uint8_t c0, uint8_t c1, uint8_t c2) {
+    bcm2835_gpio_write(dc, LOW);
+    bcm2835_spi_transfer(c0);
+    bcm2835_gpio_write(dc, HIGH);
+    bcm2835_spi_transfer(c1);
+    bcm2835_gpio_write(dc, HIGH);
+    bcm2835_spi_transfer(c2);
+}
+
 void ArduiPi_OLED::begin(void) {
 
     uint8_t multiplex;
@@ -479,37 +500,58 @@ void ArduiPi_OLED::begin(void) {
     }
 
     if ((oled_type == OLED_SSD1322G_SPI_256x64) ||
-        (oled_type == OLED_SSD1322M_SPI_256x64)) {
+        (oled_type == 9 + OLED_SSD1322M_SPI_256x64)) {
 
-        //usleep(200);
-        //U8X8_START_TRANSFER(); /* enable chip, delay is part of the transfer start */
         usleep(200);
 
-        sendCommand(0xfd, 0x12); /* unlock */
-        sendCommand(0xae);       /* display off */
-        sendCommand(
-            0xb3,
-            0x91); /* set display clock divide ratio/oscillator frequency (set clock as 80 frames/sec)  */
-        sendCommand(0xca, 0x3f); /* multiplex ratio 1/64 Duty (0x0F~0x3F) */
-        sendCommand(0xa2, 0x00); /* display offset, shift mapping ram counter */
-        sendCommand(0xa1, 0x00); /* display start line */
-        sendCommand(0xa0, 0x06, 0x011); /* Set Re-Map / Dual COM Line Mode */
-        sendCommand(0xab, 0x01);        /* Enable Internal VDD Regulator */
-        sendCommand(0xb4, 0xa0, 0x005 | 0x0fd); /* Display Enhancement A */
-        sendCommand(0xc1, 0x9f);                /* contrast */
-        sendCommand(
-            0xc7,
-            0x0f); /* Set Scale Factor of Segment Output Current Control */
-        sendCommand(0xb9); /* linear grayscale */
-        sendCommand(
-            0xb1,
-            0xe2); /* Phase 1 (Reset) & Phase 2 (Pre-Charge) Period Adjustment */
-        sendCommand(0xd1, 0x082 | 0x020, 0x020); /* Display Enhancement B */
-        sendCommand(0xbb, 0x1f);                 /* precharge  voltage */
-        sendCommand(0xb6, 0x08);                 /* precharge  period */
-        sendCommand(0xbe, 0x07);                 /* vcomh */
-        sendCommand(0xa6);                       /* normal display */
-        sendCommand(0xa9);
+        sendCommandx(0xFD, 0x12);       // Unlock IC
+        sendCommandx(0xAE);             // Display off (all pixels off)
+        sendCommandx(0xB3, 0x91);       // Display divide clockratio/freq
+        sendCommandx(0xCA, 0x3F);       // Set MUX ratio
+        sendCommandx(0xA2, 0x00);       // Display offset
+        sendCommandx(0xA1, 0x00);       // Display start Line
+        sendCommandx(0xA0, 0x14, 0x11); // Set remap & dual COM Line
+        sendCommandx(0xB5, 0x00);       // Set GPIO (disabled)
+        sendCommandx(0xAB, 0x01);       // Function select (internal Vdd)
+        sendCommandx(0xB4, 0xA0, 0xFD); // Display enhancement A (External VSL)
+
+        sendCommandx(0xc1, 0x9f); /* contrast */
+
+        sendCommandx(0xC7, 0x0F);       // Master contrast (reset)
+        sendCommandx(0xB9);             // Set default greyscale table
+        sendCommandx(0xB1, 0xe2);       // Phase length
+        sendCommandx(0xD1, 0x82, 0x20); // Display enhancement B (reset)
+        sendCommandx(0xBB, 0x1f);       // Pre-charge voltage
+        sendCommandx(0xB6, 0x08);       // 2nd precharge period
+        sendCommandx(0xBE, 0x07);       // Set VcomH
+        sendCommandx(0xA6);             // Normal display (reset)
+        sendCommandx(0xAF);             // Exit partial display
+
+        //        sendCommand(0xfd, 0x12); /* unlock */
+        //        sendCommand(0xae);       /* display off */
+        //        sendCommand(
+        //            0xb3,
+        //            0x91); /* set display clock divide ratio/oscillator frequency (set clock as 80 frames/sec)  */
+        //        sendCommand(0xca, 0x3f); /* multiplex ratio 1/64 Duty (0x0F~0x3F) */
+        //        sendCommand(0xa2, 0x00); /* display offset, shift mapping ram counter */
+        //        sendCommand(0xa1, 0x00); /* display start line */
+        //        sendCommand(0xa0, 0x06, 0x011); /* Set Re-Map / Dual COM Line Mode */
+        //        sendCommand(0xab, 0x01);        /* Enable Internal VDD Regulator */
+        //        sendCommand(0xb4, 0xa0, 0x005 | 0x0fd); /* Display Enhancement A */
+        //        sendCommand(0xc1, 0x9f);                /* contrast */
+        //        sendCommand(
+        //            0xc7,
+        //            0x0f); /* Set Scale Factor of Segment Output Current Control */
+        //        sendCommand(0xb9); /* linear grayscale */
+        //        sendCommand(
+        //            0xb1,
+        //            0xe2); /* Phase 1 (Reset) & Phase 2 (Pre-Charge) Period Adjustment */
+        //        sendCommand(0xd1, 0x082 | 0x020, 0x020); /* Display Enhancement B */
+        //        sendCommand(0xbb, 0x1f);                 /* precharge  voltage */
+        //        sendCommand(0xb6, 0x08);                 /* precharge  period */
+        //        sendCommand(0xbe, 0x07);                 /* vcomh */
+        //        sendCommand(0xa6);                       /* normal display */
+        //        sendCommand(0xa9);
 
         if (oled_type == OLED_SSD1322G_SPI_256x64) {
 

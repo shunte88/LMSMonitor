@@ -117,6 +117,8 @@ typedef struct MonitorAttrs {
     bool checkPower;
     uint8_t lastbright;
     uint8_t currbright;
+    bool blinkClock;
+    bool textOnly;
     pthread_mutex_t update;
 } MonitorAttrs;
 

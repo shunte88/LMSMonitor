@@ -112,6 +112,7 @@ typedef struct DrawTime {
     point_t pos;
     int font;
     bool fmt12;
+    bool blink;
 } DrawTime; // generic font header!
 
 typedef struct DrawVisualize {
@@ -143,8 +144,8 @@ bool setOledAddress(int8_t oa, int LR);
 void setScrollMode(enum ScrollMode sm);
 void printScrollerMode(void);
 
-void drawBitmap(int16_t x, int16_t y, uint8_t *bitmap, int16_t w, int16_t h,
-                uint16_t color);
+void drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w,
+                int16_t h, uint16_t color);
 
 double deg2Rad(double angDeg);
 double rad2Deg(double angRad);
@@ -174,7 +175,7 @@ bool isScrollerFrozen(int line);
 
 void resetDisplay(int fontSize);
 int restartDisplay(struct MonitorAttrs dopts);
-int initDisplay(struct MonitorAttrs dopts, bool init = true);
+int initDisplay(struct MonitorAttrs dopts, bool init);
 void closeDisplay(void);
 void softClear(void);
 
@@ -198,7 +199,7 @@ void downmixPeakH(
 
 // audio attributes
 void putVolume(bool v, char *buff);
-void putAudio(audio_t audio, char *buff, bool full = true);
+void putAudio(audio_t audio, char *buff, bool full);
 int putWarning(char *msg, bool init);
 
 void putIFDetail(int icon, int xpos, int ypos, char *host);
@@ -219,7 +220,7 @@ void putTinyTextCenterColor(int y, char *buff, uint16_t color);
 void putTinyTextToCenter(int y, char *buff);
 void putTinyTextToRight(int y, int r, int w, char *buff);
 void putTinyTextMaxWidthCentered(int x, int y, int w, char *buff,
-                                 uint16_t color = WHITE);
+                                 uint16_t color);
 
 void clearLine(int y);
 void clearDisplay(void);
@@ -242,9 +243,9 @@ uint16_t charHeight(void);
 void drawHorizontalBargraph(int x, int y, int w, int h, int percent);
 
 void drawHorizontalBar(int x, int y, int w, int h, int percent,
-                       enum BarStyle style, bool clear = true);
+                       enum BarStyle style, bool clear);
 void drawVerticalBar(int x, int y, int w, int h, int percent,
-                     enum BarStyle style, bool clear = true);
+                     enum BarStyle style, bool clear);
 
 void drawHorizontalStripedBar(int x, int y, int w, int h, int percent);
 void drawHorizontalCheckerBar(int x, int y, int w, int h, int percent);

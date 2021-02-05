@@ -39,6 +39,7 @@
 #include <openssl/ssl.h>
 
 #include "basehttp.h"
+#include "common.h"
 
 struct Request *parse_request(const char *raw) {
     struct Request *req = NULL;
@@ -179,7 +180,7 @@ bool baseHTTPRequest(enum Method method, char *host, uint16_t port, char *uri,
     ssize_t total_size = 0;
     ssize_t read_size = 0;
 
-    ssize_t seed = BUFSIZ;
+    ssize_t seed = BSIZE8;
     char *ret;
     if ((ret = (char *)malloc(seed * sizeof(char))) == NULL) {
         return false;
@@ -258,7 +259,20 @@ bool baseHTTPRequest(enum Method method, char *host, uint16_t port, char *uri,
         if (read_size > seed) {
             printf("%ld > %ld?\n", (long)read_size, (long)seed);
             redone = true;
-            ret = (char *)realloc(ret, read_size + total_size);
+            instrument(__LINE__, __FILE__, ".... realloc");
+            ssize_t newsize = read_size + total_size;
+            char *p = (char *)realloc(ret, newsize);
+            if (!p) {
+                fprintf(stderr, "[baseHTTPRequest] realloc failed %ld bytes!\n",
+                        newsize);
+                if (ret)
+                    free(ret);
+                ret = NULL;
+                redone = false;
+                break;
+            } else {
+                ret = p;
+            }
             if (ret == NULL) {
                 printf("[baseHTTPRequest] error: realloc failed\n");
                 redone = false;
@@ -273,7 +287,19 @@ bool baseHTTPRequest(enum Method method, char *host, uint16_t port, char *uri,
     }
 
     if (redone) {
-        ret = (char *)realloc(ret, total_size + 1);
+        instrument(__LINE__, __FILE__, ".... realloc");
+        ssize_t newsize = total_size + 1;
+        char *p = (char *)realloc(ret, newsize);
+        if (!p) {
+            fprintf(stderr, "[baseHTTPRequest] realloc failed %ld bytes!\n",
+                    newsize);
+            if (ret)
+                free(ret);
+            ret = NULL;
+            redone = false;
+        } else {
+            ret = p;
+        }
     }
     if (ret != NULL)
         *(ret + total_size) = '\0';

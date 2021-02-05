@@ -84,20 +84,20 @@ double rad2Deg(double angRad) { return (180.0 * angRad / PI); }
 
 int elementLength(int szh, int szw) { return szh * (int)((szw + 7) / 8); }
 
-void drawBitmap(int16_t x, int16_t y, uint8_t *bitmap, int16_t w, int16_t h,
-                uint16_t color) {
+void drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w,
+                int16_t h, uint16_t color) {
     display.drawBitmap(x, y, bitmap, w, h, color);
 }
 
-meter_chan_t lastVU = {-1000, -1000};
-meter_chan_t overVU = {0, 0};
-meter_chan_t dampVU = {-1000, -1000};
-meter_chan_t lastPK = {-1000, -1000};
+meter_chan_t lastVU = {{-1000, -1000}};
+meter_chan_t overVU = {{0, 0}};
+meter_chan_t dampVU = {{-1000, -1000}};
+meter_chan_t lastPK = {{-1000, -1000}};
 
 // caps and previous state
-bin_chan_t caps;
-bin_chan_t last_bin;
-bin_chan_t last_caps;
+struct bin_chan_t caps;
+struct bin_chan_t last_bin;
+struct bin_chan_t last_caps;
 
 void resetLastData(void) {
     for (int channel = 0; channel < 2; channel++) {
@@ -238,13 +238,13 @@ int restartDisplay(struct MonitorAttrs dopts) {
     scrollerFreeze();
     clearDisplay();
     closeDisplay();
-    int ret = initDisplay(dopts);
+    int ret = initDisplay(dopts, true);
     if (EXIT_SUCCESS == ret)
         hazardSign(); // if all is well
     return ret;
 }
 
-int initDisplay(struct MonitorAttrs dopts, bool init = true) {
+int initDisplay(struct MonitorAttrs dopts, bool init) {
 
     char stb[BSIZE];
     /*
@@ -540,16 +540,17 @@ void putWeatherForecast(bool clear, int x, int y, ccdata_t *cc) {
     putWeatherIcon(x + wix - 1, y, cc); // replaced y+1 w. y
 
     char buf[128];
-    putTinyTextMaxWidthCentered(x, y + 45, wc, cc->observation_time.sdatum);
+    putTinyTextMaxWidthCentered(x, y + 45, wc, cc->observation_time.sdatum,
+                                WHITE);
     display.drawRect(x, y + 38, w - 2, 9, WHITE);
     //display.fillRect(x, y + 38, w - 2, 9, WHITE);
     //putTinyTextMaxWidthCentered(x, y + 45, wc, cc->observation_time.sdatum,BLACK);
     sprintf(buf, "%d%s | %d%s", (int)round(cc->temp_max.fdatum),
             cc->temp_max.units, (int)round(cc->temp_min.fdatum),
             cc->temp_min.units);
-    putTinyTextMaxWidthCentered(x, y + 54, wc, buf);
+    putTinyTextMaxWidthCentered(x, y + 54, wc, buf, WHITE);
     sprintf(buf, "%d %%", (int)round(cc->precipitation_probability.fdatum));
-    putTinyTextMaxWidthCentered(x, y + 60, wc, buf);
+    putTinyTextMaxWidthCentered(x, y + 60, wc, buf, WHITE);
     display.drawRect(x, y + 47, w - 2, 15, WHITE);
 }
 
@@ -629,8 +630,9 @@ void downmixPeakH(struct vissy_meter_t *vissy_meter,
                   struct DrawVisualize *layout) {
 
     // intermediate variable so we can easily switch metrics
-    meter_chan_t meter = {vissy_meter->sample_accum[0],
-                          vissy_meter->sample_accum[1], 0.00, 0.00};
+    meter_chan_t meter = {
+        {(int)vissy_meter->sample_accum[0], (int)vissy_meter->sample_accum[1]},
+        {0.00, 0.00}};
 
     int divisor = 0;
     double test = 0;
@@ -698,8 +700,9 @@ void simplePeakH(struct vissy_meter_t *vissy_meter,
     }
 
     // intermediate variable so we can easily switch metrics
-    meter_chan_t meter = {vissy_meter->sample_accum[0],
-                          vissy_meter->sample_accum[1], 0.00, 0.00};
+    meter_chan_t meter = {
+        {(int)vissy_meter->sample_accum[0], (int)vissy_meter->sample_accum[1]},
+        {0.00, 0.00}};
 
     if (vissy_meter->is_mono) {
         meter.percent[0] = 100.0 * (((double)meter.metric[0] / 58.00) / 8.00);
@@ -809,7 +812,7 @@ void drawHorizontalBar(int x, int y, int w, int h, int percent,
 }
 
 void drawVerticalBar(int x, int y, int w, int h, int percent,
-                     enum BarStyle style, bool clear = true) {
+                     enum BarStyle style, bool clear) {
     if ((w > 0) && (h > 2)) {
         if (clear) {
             display.fillRect(x, y, w, h, BLACK);
@@ -851,35 +854,35 @@ void drawVerticalBar(int x, int y, int w, int h, int percent,
 }
 
 void drawHorizontalStripedBar(int x, int y, int w, int h, int percent) {
-    drawHorizontalBar(x, y, w, h, percent, BARSTYLE_STRIPE);
+    drawHorizontalBar(x, y, w, h, percent, BARSTYLE_STRIPE, true);
 }
 
 void drawHorizontalCheckerBar(int x, int y, int w, int h, int percent) {
-    drawHorizontalBar(x, y, w, h, percent, BARSTYLE_CHECK);
+    drawHorizontalBar(x, y, w, h, percent, BARSTYLE_CHECK, true);
 }
 
 void drawHorizontalSplitBar(int x, int y, int w, int h, int percent) {
-    drawHorizontalBar(x, y, w, h, percent, BARSTYLE_SPLIT);
+    drawHorizontalBar(x, y, w, h, percent, BARSTYLE_SPLIT, true);
 }
 
 void drawHorizontalCappedBar(int x, int y, int w, int h, int percent) {
-    drawHorizontalBar(x, y, w, h, percent, BARSTYLE_PKCAP_ONLY);
+    drawHorizontalBar(x, y, w, h, percent, BARSTYLE_PKCAP_ONLY, true);
 }
 
 void drawVerticalStripedBar(int x, int y, int w, int h, int percent) {
-    drawVerticalBar(x, y, w, h, percent, BARSTYLE_STRIPE);
+    drawVerticalBar(x, y, w, h, percent, BARSTYLE_STRIPE, true);
 }
 
 void drawVerticalCheckerBar(int x, int y, int w, int h, int percent) {
-    drawVerticalBar(x, y, w, h, percent, BARSTYLE_CHECK);
+    drawVerticalBar(x, y, w, h, percent, BARSTYLE_CHECK, true);
 }
 
 void drawVerticalSplitBar(int x, int y, int w, int h, int percent) {
-    drawVerticalBar(x, y, w, h, percent, BARSTYLE_SPLIT);
+    drawVerticalBar(x, y, w, h, percent, BARSTYLE_SPLIT, true);
 }
 
 void drawVerticalCappedBar(int x, int y, int w, int h, int percent) {
-    drawVerticalBar(x, y, w, h, percent, BARSTYLE_PKCAP_ONLY);
+    drawVerticalBar(x, y, w, h, percent, BARSTYLE_PKCAP_ONLY, true);
 }
 
 void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color) {
@@ -926,8 +929,8 @@ void downmixVU(struct vissy_meter_t *vissy_meter,
     else
         vumeterSwoosh(false, layout);
 
-    meter_chan_t thisVU = {vissy_meter->sample_accum[0],
-                           vissy_meter->sample_accum[1]};
+    meter_chan_t thisVU = {
+        {(int)vissy_meter->sample_accum[0], (int)vissy_meter->sample_accum[1]}};
 
     for (int channel = 0; channel < 2; channel++) {
         // meter value
@@ -978,8 +981,8 @@ void downmixVU(struct vissy_meter_t *vissy_meter,
 //void stereoVU(struct vissy_meter_t *vissy_meter, struct DrawVisualize *layout) {
 void stereoVU(struct vissy_meter_t *vissy_meter, DrawVisualize *layout) {
 
-    meter_chan_t thisVU = {vissy_meter->sample_accum[0],
-                           vissy_meter->sample_accum[1]};
+    meter_chan_t thisVU = {
+        {(int)vissy_meter->sample_accum[0], (int)vissy_meter->sample_accum[1]}};
 
     // overload : if n # samples > 0dB light overload
 
@@ -1392,8 +1395,8 @@ void stereoPeakH(struct vissy_meter_t *vissy_meter,
     }
 
     // intermediate variable so we can easily switch metrics
-    meter_chan_t meter = {vissy_meter->sample_accum[0],
-                          vissy_meter->sample_accum[1]};
+    meter_chan_t meter = {
+        {(int)vissy_meter->sample_accum[0], (int)vissy_meter->sample_accum[1]}};
 
     // do no work if we don't need to
     if ((lastPK.metric[0] == meter.metric[0]) &&
@@ -1459,8 +1462,8 @@ void simplePeakHZZZ(struct vissy_meter_t *vissy_meter,
     }
 
     // intermediate variable so we can easily switch metrics
-    meter_chan_t meter = {vissy_meter->sample_accum[0],
-                          vissy_meter->sample_accum[1]};
+    meter_chan_t meter = {
+        {(int)vissy_meter->sample_accum[0], (int)vissy_meter->sample_accum[1]}};
 
     // do no work if we don't need to
     if ((lastPK.metric[0] == meter.metric[0]) &&
@@ -1527,6 +1530,8 @@ void placeAMPM(int offset, int x, int y, uint16_t color) {
 
 void drawTimeBlink(uint8_t cc, DrawTime *dt) {
     int x = dt->pos.x + (2 * dt->charWidth);
+    if (!dt->blink)
+        cc = ':'; // fixed
     if (32 == cc) // a space - colon off
         bigChar(':', x, dt->pos.y, dt->bufferLen, dt->charWidth, dt->charHeight,
                 getOledFont(dt->font, dt->fmt12), BLACK);
@@ -1598,7 +1603,7 @@ void putVolume(bool v, char *buff) {
     display.drawBitmap(0, 0, dest, w, w, WHITE);
 }
 
-void putAudio(audio_t audio, char *buff, bool full = true) {
+void putAudio(audio_t audio, char *buff, bool full) {
 
     int w = 8;
     int start = 0;
@@ -1685,7 +1690,7 @@ void baselineScroller(Scroller *s) {
     enum ScrollMode sm = scrollMode;
     if (SCROLLMODE_RANDOM == scrollMode) {
         srandom(time(NULL));
-        sm = (ScrollMode)random() % SCROLLMODE_MAX;
+        sm = (ScrollMode)(random() % SCROLLMODE_MAX);
     }
     s->active = false;
     s->priorstate = false;
@@ -1756,7 +1761,7 @@ bool putScrollable(int line, char *buff) {
                     enum ScrollMode sm = scrollMode;
                     if (SCROLLMODE_RANDOM == scrollMode) {
                         srandom(time(NULL));
-                        sm = (ScrollMode)random() % SCROLLMODE_MAX;
+                        sm = (ScrollMode)(random() % SCROLLMODE_MAX);
                     }
                     scroll[line].scrollMode = sm;
                     scroll[line].active = true;
@@ -2095,7 +2100,7 @@ void putTinyTextMaxWidth(int x, int y, int w, char *buff) {
 
 // using tom thumb font to squeeze a little more real-estate
 void putTinyTextMaxWidthCentered(int x, int y, int w, char *buff,
-                                 uint16_t color = WHITE) {
+                                 uint16_t color) {
 
     display.setFont(&TomThumb);
     int tlen = strlen(buff);
@@ -2143,7 +2148,8 @@ void putTinyTextMultiMaxWidth(int x, int y, int w, int lines, char *buff) {
                      lines * (2 + _tt_char_height), BLACK);
     int i = 0;
     int k = 0;
-    int16_t x1, y1, w1, h1;
+    int16_t x1, y1;
+    uint16_t w1, h1;
     int16_t wtest = maxXPixel() - x;
     char *out[256];
     char delim[] = " \t\r\n\v\f"; // POSIX whitespace characters

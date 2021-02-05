@@ -91,11 +91,11 @@ struct peak_meter_t {
 struct bin_chan_t {
     double bin[METER_CHANNELS][MAX_SUBBANDS];
 };
-struct meter_chan_t {
+typedef struct {
     int metric[METER_CHANNELS];
     double percent[METER_CHANNELS];
     bool erase[METER_CHANNELS];
-};
+} meter_chan_t;
 typedef char vis_type_t[4]; // Visualizer type - include AI variants
 
 struct vissy_meter_t {
