@@ -105,7 +105,7 @@ tagtypes_t layout[LINE_NUM][3] = {
 
 bool freed = false;
 // free and cleanup here
-void before_exit(void) {
+static inline void before_exit(void) {
     printf("\nCleanup and shutdown\n");
     if (!freed) { // ??? race condition
         freed = true;
@@ -123,38 +123,45 @@ void before_exit(void) {
     printf("All Done\nBye Bye.\n");
 }
 
-void sigint_handler(int sig) {
+static inline void sigint_handler(int sig) {
     before_exit();
-    exit(0);
+    exit(0); // normally sig passed
 }
 
-void attach_signal_handler(void) {
+static inline void attach_signal_handler(void) {
 
-    struct sigaction new_action, old_action;
+    struct sigaction sa;
+    static const int term_signals[] = {
+        /* POSIX.1-1990 */
+        SIGHUP,
+        SIGINT,
+        SIGQUIT,
+        SIGILL,
+        SIGABRT,
+        SIGFPE,
+        SIGKILL,
+        SIGSEGV,
+        SIGPIPE,
+        SIGALRM,
+        SIGTERM,
+        SIGUSR1,
+        SIGUSR2,
+        /* POSIX.1-2001 */
+        SIGBUS,
+        SIGPOLL,
+        SIGPROF,
+        SIGSYS,
+        SIGTRAP,
+        SIGVTALRM,
+        SIGXCPU,
+        SIGXFSZ,
+    };
 
-    new_action.sa_handler = sigint_handler;
-    sigemptyset(&new_action.sa_mask);
-    new_action.sa_flags = 0;
-
-    sigaction(SIGINT, NULL, &old_action);
-    if (old_action.sa_handler != SIG_IGN)
-        sigaction(SIGINT, &new_action, NULL);
-    sigaction(SIGHUP, NULL, &old_action);
-    if (old_action.sa_handler != SIG_IGN)
-        sigaction(SIGHUP, &new_action, NULL);
-    sigaction(SIGTERM, NULL, &old_action);
-    if (old_action.sa_handler != SIG_IGN)
-        sigaction(SIGTERM, &new_action, NULL);
-    sigaction(SIGQUIT, NULL, &old_action);
-    if (old_action.sa_handler != SIG_IGN)
-        sigaction(SIGQUIT, &new_action, NULL);
-    sigaction(SIGSTOP, NULL, &old_action);
-    if (old_action.sa_handler != SIG_IGN)
-        sigaction(SIGSTOP, &new_action, NULL);
-
-    new_action.sa_flags = SA_NODEFER;
-    sigaction(SIGSEGV, &new_action,
-              NULL); /* catch seg fault - and hopefully backtrace */
+    for (int i = 0; i < sizeof(term_signals) / sizeof(term_signals[0]); i++) {
+        memset(&sa, 0, sizeof(sa));
+        sa.sa_handler = sigint_handler;
+        sigaction(term_signals[i], &sa, NULL);
+    }
 }
 
 // "page" definitions, no break-out for visualizer

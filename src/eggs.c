@@ -1213,9 +1213,7 @@ void technicsSL1200(bool blank) {
         fillRectangle(47, 27, 30, 24, c);
         fillRectangle(60, 4, 17, 24, c);
     }
-    printf("1");
     drawBitmap(0, 0, sl1200t(), 83, 64, WHITE);
-    printf("2\n");
 }
 
 void vinylEffects(int xpos, int lpos, int frame, int mxframe) {
