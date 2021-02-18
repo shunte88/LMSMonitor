@@ -10,11 +10,16 @@
    defines kiss_fft_scalar as either short or a float type
    and defines
    typedef struct { kiss_fft_scalar r; kiss_fft_scalar i; }kiss_fft_cpx; */
+
+#ifndef _kiss_fft_guts_h
+#define _kiss_fft_guts_h
+
 #include "kiss_fft.h"
+#include "kiss_fft_log.h"
 #include <limits.h>
 
 #define MAXFACTORS 32
-/* e.g. an fft of length 128 has 4 factors 
+/* e.g. an fft of length 128 has 4 factors
  as far as kissfft is concerned
  4*4*4*2
  */
@@ -53,10 +58,8 @@ struct kiss_fft_state {
 #define CHECK_OVERFLOW_OP(a, op, b)                                            \
     if ((SAMPPROD)(a)op(SAMPPROD)(b) > SAMP_MAX ||                             \
         (SAMPPROD)(a)op(SAMPPROD)(b) < SAMP_MIN) {                             \
-        fprintf(stderr,                                                        \
-                "WARNING:overflow @ " __FILE__ "(%d): (%d " #op                \
-                " %d) = %ld\n",                                                \
-                __LINE__, (a), (b), (SAMPPROD)(a)op(SAMPPROD)(b));             \
+        KISS_FFT_WARNING("overflow (%d " #op " %d) = %ld", (a), (b),           \
+                         (SAMPPROD)(a)op(SAMPPROD)(b));                        \
     }
 #endif
 
@@ -146,7 +149,7 @@ struct kiss_fft_state {
 #else
 #define KISS_FFT_COS(phase) (kiss_fft_scalar) cos(phase)
 #define KISS_FFT_SIN(phase) (kiss_fft_scalar) sin(phase)
-#define HALF_OF(x) ((x)*.5)
+#define HALF_OF(x) ((x) * ((kiss_fft_scalar).5))
 #endif
 
 #define kf_cexp(x, phase)                                                      \
@@ -156,8 +159,7 @@ struct kiss_fft_state {
     } while (0)
 
 /* a debugging function */
-#define pcpx(c)                                                                \
-    fprintf(stderr, "%g + %gi\n", (double)((c)->r), (double)((c)->i))
+#define pcpx(c) KISS_FFT_DEBUG("%g + %gi\n", (double)((c)->r), (double)((c)->i))
 
 #ifdef KISS_FFT_USE_ALLOCA
 // define this to allow use of alloca instead of malloc for temporary buffers
@@ -171,3 +173,5 @@ struct kiss_fft_state {
 #define KISS_FFT_TMP_ALLOC(nbytes) KISS_FFT_MALLOC(nbytes)
 #define KISS_FFT_TMP_FREE(ptr) KISS_FFT_FREE(ptr)
 #endif
+
+#endif /* _kiss_fft_guts_h */
